@@ -23,193 +23,68 @@ Co-developed with Claude AI · Audited by Gemini AI · Built by [@chontit](https
 
 ### ❓ What is Seed XOR?
 
-Seed XOR is a cryptographic method that uses **Bitwise Exclusive OR (XOR)** to split a single Master Seed into multiple independent "Shares" — and reconstruct it only when all shares are combined.
+Seed XOR is an advanced cryptographic method that uses **Bitwise Exclusive OR (XOR)** to mathematically split a single Master Seed into multiple independent "Shares". The Master Seed can only be reconstructed when **all** shares are combined.
 
-Unlike physically cutting a paper wallet in half (which dangerously reduces entropy and leaks partial information), Seed XOR provides **mathematically perfect secrecy**:
+Unlike the dangerous practice of physically cutting a paper seed backup in half (which drastically reduces entropy and leaks partial information), Seed XOR provides **mathematically perfect secrecy**:
 
-| Property | Seed XOR | Cut Paper in Half |
+| Feature | Seed XOR | Cut Paper in Half ✂️ |
 |---|---|---|
-| Entropy preserved | ✅ 256-bit full | ❌ ~128-bit each half |
-| All-or-Nothing | ✅ Yes | ❌ No |
-| Each part looks valid | ✅ Yes (decoy wallet) | ❌ Obviously incomplete |
-| Verifiable math | ✅ Open, auditable | ❌ None |
+| **Entropy Preserved** | ✅ Yes (Full 256-bit security) | ❌ No (~128-bit per half, easily brute-forced) |
+| **Recovery Logic** | ✅ All-or-Nothing | ❌ Incomplete & vulnerable |
+| **Decoy Potential** | ✅ Yes (Each share is a valid wallet) | ❌ Obviously a torn piece of paper |
+| **Auditability** | ✅ Open, verifiable math | ❌ None |
 
-**Key properties:**
-
-- **All-or-Nothing (M-of-M):** Split into 3 shares → need all 3 to recover. Losing 1 share means the funds are permanently inaccessible. An attacker holding 2 of 3 shares gains **zero** information about the third.
-- **Plausible Deniability ($5 Wrench Attack protection):** Each individual share is a **100% valid BIP-39 seed phrase** on its own. You can fund shares with small amounts of Bitcoin as "Decoy Wallets." If coerced, hand over a share — the attacker cannot distinguish it from a real wallet.
+**Key Properties of Seed XOR:**
+1. **All-or-Nothing (M-of-M):** If you split a seed into 3 shares, you absolutely need all 3 to recover it. Losing 1 share means the funds are permanently inaccessible. An attacker finding 2 out of 3 shares gains **zero** mathematical advantage in guessing the final share.
+2. **Plausible Deniability ($5 Wrench Attack Protection):** The magic of Seed XOR is that **each individual share is a 100% valid BIP-39 seed phrase on its own**. You can deposit a small amount of Bitcoin into each share to act as "Decoy Wallets". If physically threatened, you can surrender a single share, and the attacker will have no cryptographic way to prove it's only a fraction of your true wealth.
 
 ---
 
-### ⚔️ Seed Backup Methods Compared: Multisig vs. Shamir Backup vs. Seed XOR
+### ⚔️ Seed Backup Methods Compared: Multisig vs. Shamir vs. Seed XOR
 
-There are three main cryptographic methods for securing a Bitcoin seed with redundancy and distribution. Each solves the same core problem — "no single point of failure" — but with fundamentally different approaches, trade-offs, and complexity levels.
+There are three primary cryptographic methods for eliminating a single point of failure in Bitcoin custody. Here is how they compare:
 
-#### 🔑 Quick Summary
-
-| Criteria | Multisig | Shamir Backup (SLIP-39) | Seed XOR (BIP-39) |
+| Criteria | 1️⃣ Multisig | 2️⃣ Shamir (SLIP-39) | 3️⃣ Seed XOR (This tool) |
 |---|---|---|---|
-| Standard | Bitcoin Script / BIP-11 | SLIP-39 (Satoshi Labs) | BIP-39 compatible |
-| Scheme type | M-of-N (e.g. 2-of-3) | M-of-N (e.g. 2-of-3) | M-of-M (all required) |
-| Threshold recovery | ✅ Yes (M < N) | ✅ Yes (M < N) | ❌ No (all shares required) |
-| Hardware wallet support | ✅ Wide (Trezor, Coldcard, Ledger) | ⚠️ Limited (Trezor Model T/Safe) | ✅ Any BIP-39 wallet |
-| Tool required to reconstruct | ✅ Wallet software | ✅ SLIP-39 tool | ✅ XOR calculator (this tool) |
-| Plausible deniability | ❌ None | ❌ Shares look like shares | ✅ Each share is a valid seed |
-| Mathematical proof of security | ✅ Shamir's Secret Sharing | ✅ Shamir's Secret Sharing | ✅ Information-theoretic |
-| Complexity | 🔴 High | 🟡 Medium | 🟢 Low |
-| Single point of failure | ✅ Eliminated | ✅ Eliminated | ⚠️ Eliminated only if M=N |
-| On-chain footprint change | 🔴 Yes (new address format) | ❌ No | ❌ No |
-| Works with existing seed | ❌ Requires new wallet setup | ❌ Requires new seed generation | ✅ Works with existing seed |
+| **Structure** | M-of-N keys signing a transaction | M-of-N shares to recreate a seed | M-of-M shares to recreate a seed |
+| **Threshold Recovery** | ✅ Yes (Lose a key, still safe) | ✅ Yes (Lose a share, still safe) | ❌ No (Lose a share, lose all funds) |
+| **Plausible Deniability**| ❌ No (Visible on-chain) | ❌ No (Words identify as shares) | ✅ **Yes (Shares look like real seeds)** |
+| **Use Existing Seed?** | ❌ No (Requires new setup) | ❌ No (Requires new SLIP-39 setup) | ✅ **Yes (Works with any existing seed)** |
+| **Complexity Level** | 🔴 High (Requires xpub/descriptor management) | 🟡 Medium | 🟢 **Low (Just seed words)** |
+
+#### 🎯 Decision Guide: Which method is right for you?
+* **Choose Multisig** if you are an institution or hold massive wealth and need true threshold security across different devices.
+* **Choose Shamir Backup** if you use a Trezor and want a threshold backup (e.g., 2-of-3) using only paper, but don't care about plausible deniability.
+* **Choose Seed XOR** if you want to split an **existing** seed across multiple physical locations, demand absolute plausible deniability against physical threats, and strictly understand the "All-or-Nothing" trade-off.
 
 ---
 
-#### 1️⃣ Multisig (Multi-Signature)
+### ✨ Tool Features
 
-**How it works:** Instead of a single private key controlling a wallet, Multisig requires **M signatures from N different keys** to authorize a transaction. Example: 2-of-3 means any 2 of 3 keys can sign. Each key is a completely separate device or seed.
-
-**Strengths:**
-- **True M-of-N threshold:** Lose 1 key in a 2-of-3 setup and funds are still recoverable with the remaining 2
-- **Mathematically proven security** at the transaction level — no single device compromise loses funds
-- **Battle-tested in production** — used by exchanges, institutions, and advanced Bitcoiners for years
-- **Requires attacker to compromise multiple independent devices** simultaneously
-
-**Weaknesses:**
-- **High complexity:** Requires careful coordination of multiple hardware wallets, xpubs, and wallet descriptors. A mistake in backup can permanently lock funds
-- **On-chain footprint change:** Multisig uses P2SH or P2WSH addresses, which look different from standard P2WPKH — identifiable on-chain
-- **Cannot use with an existing single-sig seed** — requires complete wallet migration
-- **Inheritance/recovery complexity:** Heirs must understand how to combine keys and use the correct wallet software
-- **No plausible deniability:** Owning a multisig wallet is obvious on-chain
-- **Vendor lock-in risk:** If a specific hardware wallet model becomes discontinued or the software changes, recovery may be complicated
-
-**Best for:** High-value cold storage, institutional Bitcoin custody, users comfortable with technical complexity.
+* **100% Offline & Air-gapped Ready:** Single `.html` file. No CDN, no external scripts.
+* **Embedded BIP-39 Wordlist:** All 2,048 words are built-in.
+* **Native SHA-256 Engine:** Pure JavaScript FIPS 180-4 implementation. Does not rely on Web Crypto API (ensuring compatibility across all offline environments).
+* **Checksum-Aware XOR:** Correctly calculates the 8-bit checksum for the final 24th word (it does not just naively XOR the last word).
+* **Flexible Configurations:** Supports 12 to 24-word seeds, and 2 to 10 shares.
+* **Transparent Verification:** Displays a bit-by-bit XOR table so you can verify the math manually.
+* **Strict OPSEC Lock:** Automatically blocks execution if opened on a networked server (`http/https`).
 
 ---
 
-#### 2️⃣ Shamir's Secret Sharing / Shamir Backup (SLIP-39)
+### 📥 Secure Usage Guide
 
-**How it works:** Uses **Shamir's Secret Sharing (SSS)** algorithm to mathematically split a secret into N shares, where any M shares can reconstruct the original. Unlike XOR, SSS works with polynomial interpolation over a finite field — meaning any M-of-N subset (not all) is sufficient.
+> ⚠️ **NEVER enter your real seed phrase on an internet-connected device.**
 
-**Strengths:**
-- **True M-of-N threshold with M < N:** Example: 2-of-5 means any 2 of 5 shares recover the seed — provides genuine redundancy. Losing some shares does not lose access
-- **Mathematically proven:** Based on Shamir's Secret Sharing, a well-established academic cryptographic primitive
-- **Hardware wallet integration:** Trezor Model T and Trezor Safe natively support SLIP-39 generation and recovery
-- **No single point of failure** with genuine redundancy (M < N)
-
-**Weaknesses:**
-- **Limited hardware support:** Primarily Trezor. Coldcard, Ledger, and most other wallets do not support SLIP-39 natively as of 2025
-- **Cannot use with an existing BIP-39 seed:** SLIP-39 generates a different seed — you must start fresh and migrate funds
-- **Shares are obviously shares:** A SLIP-39 share looks nothing like a normal BIP-39 seed phrase — no plausible deniability
-- **Reconstruction requires SLIP-39 compatible software:** Not as universally available as BIP-39 tools
-- **Trust in implementation:** The split must be done on a trusted device; if the Trezor is compromised during share generation, all shares are compromised
-
-**Best for:** Users with Trezor devices who want genuine M-of-N threshold recovery, willing to start with a fresh seed.
-
----
-
-#### 3️⃣ Seed XOR (BIP-39 XOR)
-
-**How it works:** Uses **Bitwise XOR** on the raw entropy bits of BIP-39 seed phrases. Split: generate random Share A and Share B such that `A XOR B = Master Seed`. Reconstruct: `Share A XOR Share B = Master Seed`. Each share is a independently valid BIP-39 seed. The XOR operation preserves all entropy bits — the security is information-theoretic (proven impossible to reconstruct without all shares).
-
-**Strengths:**
-- **Works with any existing BIP-39 seed:** No need to migrate. Split your current seed today without creating a new wallet
-- **Any BIP-39 wallet can verify shares:** Load any share into Trezor, Coldcard, Ledger, or any hardware wallet to verify it opens a (decoy) wallet
-- **Plausible deniability:** Each share is indistinguishable from a real seed. Fund shares with small amounts — hand over under coercion without revealing the master
-- **Zero new on-chain footprint:** The Master Seed produces the same addresses — no wallet migration needed
-- **Simple and auditable math:** XOR is one of the simplest binary operations — verifiable by hand or this open-source tool
-- **No vendor dependency:** No proprietary format, works with open standards forever
-- **Information-theoretic security:** Proven that knowing M-1 shares reveals mathematically zero information about the master seed
-
-**Weaknesses:**
-- **M-of-M only (no threshold):** All-or-Nothing. If you create 3 shares and lose 1, funds are permanently inaccessible. There is no "I only need 2-of-3" recovery
-- **Manual process requires a trusted tool:** Must use a correct XOR calculator. A buggy tool (e.g., one that ignores checksum recomputation) produces an incorrect Master Seed that appears valid but opens the wrong wallet
-- **No native hardware wallet support for splitting:** The split must be done externally (this tool). Hardware wallets only handle the individual BIP-39 shares as normal seeds
-- **Coldcard support:** Coldcard firmware does support XOR natively — but other hardware wallets do not have a built-in XOR combine function
-
-**Best for:** Bitcoin self-custody holders who want to split an existing seed across locations, value simplicity and auditability, need plausible deniability, and understand the all-or-nothing trade-off.
-
----
-
-#### 🎯 Decision Guide: Which Method Should You Use?
-
-```
-Do you want to split an EXISTING seed without creating a new wallet?
-├── Yes → Seed XOR is your only option
-└── No (starting fresh)
-    ├── Do you want M-of-N threshold (lose some shares, still recover)?
-    │   ├── Yes → Shamir Backup (if you have Trezor) or Multisig
-    │   └── No (all-or-nothing is acceptable) → Seed XOR
-    ├── Do you need plausible deniability ($5 wrench attack protection)?
-    │   ├── Yes → Seed XOR
-    │   └── No → Any method
-    └── Do you need institutional-grade security with multiple independent devices?
-        ├── Yes → Multisig
-        └── No → Seed XOR or Shamir
-```
-
-> **The honest answer:** For most individual Bitcoin self-custody users, **Seed XOR is the best balance of security, simplicity, and compatibility** — with the critical caveat that you must understand and accept the all-or-nothing trade-off.
-
----
-
-### ✨ Features
-
-| Feature | Detail |
-|---|---|
-| 🔌 100% Offline | No CDN, no external requests. Single `.html` file |
-| 📖 BIP-39 Wordlist | All 2,048 words embedded directly in the file |
-| 🔐 SHA-256 Engine | Pure JavaScript FIPS 180-4 implementation, no Web Crypto API |
-| ✅ Checksum-aware XOR | Correctly recomputes checksum for the last word (7+4 or 3+8 bits) |
-| 📏 Flexible Seed Length | Supports 12, 15, 18, 21, 24 words |
-| 🔢 Flexible Shares | Supports 2 to 10 shares (M-of-M) |
-| ⌨️ Autocomplete | Real-time BIP-39 word suggestions as you type |
-| 📋 Paste Mode | Paste all words at once or type one by one |
-| 🔍 Bit-level Verification | Step-by-step 11-bit XOR table with Binary, Decimal, and Word |
-| 🛡️ Hard Stop on Bad Checksum | Cannot calculate if any share has an invalid checksum |
-| 🌐 OPSEC Environment Check | Detects remote server and blocks by default (Demo Mode opt-in) |
-| 🔥 Clear Session Button | One click to `location.reload()` — wipes all data from RAM |
-| 📋 Clipboard Fallback | Works on `file://` and Tor Browser Safest mode (execCommand fallback) |
-
----
-
-### 🧮 How BIP-39 XOR Works (Technical)
-
-```
-12 words = 132 bits = 128 bits entropy + 4 bits checksum
-24 words = 264 bits = 256 bits entropy + 8 bits checksum
-
-Word 1–11  : 11 bits each → pure entropy → XOR normally
-Word 12    : 7 bits entropy (XOR) + 4 bits checksum (SHA-256 recomputed)
-
-Word 1–23  : 11 bits each → pure entropy → XOR normally
-Word 24    : 3 bits entropy (XOR) + 8 bits checksum (SHA-256 recomputed)
-```
-
-The checksum of the Master Seed is **always recomputed from the XOR'd entropy** — never derived from XOR-ing the checksums of individual shares.
-
-SHA-256 self-test runs on every page load against known test vectors to verify the engine is working correctly before any calculation.
-
----
-
-### 📥 How to Download and Use (Secure Mode)
-
-> ⚠️ **NEVER use your real seed phrase on an internet-connected machine.**
-
-1. **Download:** Click `Seed-XOR.html` in this repository → **Raw** → `Ctrl+S` to save
-2. **Verify the file** (see Checksums section below) — confirm the file was not tampered with
-3. Copy the file to a clean USB drive
-4. Boot into **Tails OS** (or any offline OS)
-5. **Physically disable all network** — unplug LAN cable, turn off Wi-Fi
-6. Open `Seed-XOR.html` in the browser
-7. Confirm SHA-256 self-test shows **green** before entering any data
-8. Enter your shares, calculate the Master Seed
-9. Write the result on paper or metal — **never type it anywhere digital**
-10. Click **🔥 Clear Session** when done
-11. **Shut down immediately** — RAM is wiped on power-off
+1. **Download:** Right-click `Seed-XOR.html` → **Save link as...**
+2. **Verify Checksum:** Ensure the file hash matches the values provided below.
+3. **Go Offline:** Transfer the file to a USB drive and boot into **Tails OS** (or a clean, offline computer). Physically unplug the LAN cable and turn off Wi-Fi.
+4. **Calculate:** Open the file, enter your shares, and calculate your Master Seed.
+5. **Secure:** Write your Master Seed on paper or metal. Do not take photos.
+6. **Wipe:** Click **🔥 Clear Session** and shut down the computer immediately to wipe the RAM.
 
 ---
 
 ### 🔐 File Verification (Checksums)
-
-Verify before use — confirm the file has not been tampered with or injected with malware.
 
 **Filename:** `Seed-XOR.html`
 
@@ -218,291 +93,106 @@ Verify before use — confirm the file has not been tampered with or injected wi
 | **SHA-256** | `00fa0af4997d0ace1cd4ec57cf7be906e8d80de8eaca335716576d5a7397bcae` |
 | **MD5** | `b778e002d05353476d5ecfc503172db9` |
 
-#### Verify on your OS:
-
-**Windows (PowerShell)**
-```powershell
-Get-FileHash .\Seed-XOR.html -Algorithm SHA256
-Get-FileHash .\Seed-XOR.html -Algorithm MD5
-```
-
-**macOS (Terminal)**
-```bash
-shasum -a 256 Seed-XOR.html
-md5 Seed-XOR.html
-```
-
-**Linux / Tails OS (Terminal)**
-```bash
-sha256sum Seed-XOR.html
-md5sum Seed-XOR.html
-```
-
----
-
-### 🔒 Security Model
-
-- **No network calls** — verified by inspecting the source: zero `fetch()`, `XMLHttpRequest`, or external `<script src>` tags
-- **No localStorage / sessionStorage** — all state is in-memory only, wiped on page close
-- **Input sanitization** — all words are validated against the BIP-39 wordlist (lowercase a–z only) before any DOM rendering → no XSS surface
-- **Hard stop on invalid checksum** — calculation is blocked if any share fails BIP-39 checksum validation
-- **Environment lock** — detects `https://` remote server and disables calculation by default; requires explicit Demo Mode activation
-- **Defense in depth** — OPSEC lock enforced in 3 layers: `IS_UNSAFE_ENV` flag, `updateCalcBtn()`, and `calculate()` function
-
----
-
-### 🤝 Credits & Acknowledgements
-
-- **Author:** [Chollatis Bitcoiner](https://github.com/chontit) — RTAF Officer & Bitcoin educator, Korat Bitcoiner community
-- **AI Co-pilot:** Claude (Anthropic) — architecture, code, security hardening
-- **Security Audit:** Gemini (Google) — 4-round code review, edge case discovery
-- **Bitcoin education platform:** [learning.chontit.win](https://learning.chontit.win)
-- **BIP-39 Wordlist source:** [trezor/python-mnemonic](https://github.com/trezor/python-mnemonic)
-- **Specification:** [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki), [FIPS 180-4 SHA-256](https://csrc.nist.gov/publications/detail/fips/180/4/final)
+**Verification Commands:**
+* **Windows (PowerShell):** `Get-FileHash .\Seed-XOR.html -Algorithm SHA256`
+* **macOS / Linux:** `shasum -a 256 Seed-XOR.html`
 
 ---
 
 ## 🇹🇭 ภาษาไทย
 
-เครื่องมือคำนวณ **Seed XOR** สำหรับ BIP-39 แบบออฟไลน์ 100% ในรูปแบบไฟล์เดียว (Single-file HTML) ออกแบบมาเพื่อความปลอดภัยสูงสุดระดับ Cypherpunk เหมาะสำหรับใช้งานบนระบบที่ปิดอินเทอร์เน็ต (Air-gapped) เช่น Tails OS
+เครื่องมือคำนวณ **Seed XOR** สำหรับมาตรฐาน BIP-39 แบบออฟไลน์ 100% ในรูปแบบไฟล์เดียวจบ (Single-file HTML) ออกแบบมาเพื่อความปลอดภัยสูงสุดระดับ Cypherpunk (OPSEC ระดับสูงสุด) เหมาะสำหรับใช้งานบนระบบที่ถูกตัดขาดจากอินเทอร์เน็ต (Air-gapped) เช่น Tails OS
 
-พัฒนาร่วมกับ Claude AI · ตรวจสอบโดย Gemini AI · สร้างโดย [@chontit](https://github.com/chontit)
+พัฒนาร่วมกับ Claude AI · ตรวจสอบความปลอดภัยโดย Gemini AI · สร้างโดย [@chontit](https://github.com/chontit)
 
 ---
 
 ### ❓ Seed XOR คืออะไร?
 
-Seed XOR คือเทคนิคการเข้ารหัสที่ใช้ **คณิตศาสตร์ XOR ระดับบิต** เพื่อแยก Master Seed ออกเป็นหลายชิ้นส่วน (Shares) และกู้คืนได้เมื่อนำมารวมกันครบทุกชิ้น
+**Seed XOR** คือเทคนิคทางวิทยาการเข้ารหัสลับ (Cryptography) ที่ใช้คณิตศาสตร์ระดับบิตที่เรียกว่า **Exclusive OR (XOR)** เพื่อ "ตอกรหัสทับกัน" หรือพูดง่ายๆ คือการแยก Seed หลัก (Master Seed) ออกเป็นหลายๆ ชิ้นส่วน (Shares) โดยคุณจะสามารถเข้าถึงเงินได้ก็ต่อเมื่อนำชิ้นส่วน **"ทั้งหมด"** มารวมร่างกันเท่านั้น
 
-**เปรียบเทียบกับการตัดกระดาษแบ่งครึ่ง:**
+**ทำไมถึงห้าม "ตัดกระดาษจด Seed แบ่งครึ่ง"?**
+หลายคนมักเอา Seed 24 คำมาตัดกระดาษแบ่งครึ่ง (แผ่นละ 12 คำ) ไปซ่อนคนละที่ ซึ่งเป็นวิธีที่ **อันตรายมาก** เพราะถ้าโจรได้กระดาษไป 1 แผ่น โจรจะเดาคำที่เหลือได้ง่ายขึ้นมหาศาล แต่ Seed XOR แก้ปัญหานี้ได้อย่างสมบูรณ์แบบ:
 
-| คุณสมบัติ | Seed XOR | ตัดกระดาษครึ่ง |
+| คุณสมบัติ | เทคนิค Seed XOR 🛡️ | การตัดกระดาษแบ่งครึ่ง ✂️ |
 |---|---|---|
-| Entropy เต็ม 256-bit | ✅ ใช่ | ❌ แต่ละครึ่งมีแค่ ~128-bit |
-| All-or-Nothing จริง | ✅ ใช่ | ❌ ไม่ใช่ |
-| แต่ละส่วนดูเหมือน Seed จริง | ✅ ใช่ (ทำ Decoy ได้) | ❌ ชัดเจนว่าไม่สมบูรณ์ |
-| ตรวจสอบคณิตศาสตร์ได้ | ✅ โปร่งใสทุก bit | ❌ ไม่มี |
+| **ความปลอดภัย (Entropy)** | ✅ ปลอดภัยเต็ม 256-bit เท่าเดิม | ❌ ความปลอดภัยลดลงครึ่งหนึ่ง โดนแฮ็กได้ง่าย |
+| **เงื่อนไขการกู้คืน** | ✅ ต้องมีครบทุกชิ้นเท่านั้น (All-or-Nothing) | ❌ ข้อมูลแหว่งไปครึ่งหนึ่ง |
+| **การพรางตัว (Decoy Wallet)**| ✅ ทำได้ (แต่ละชิ้นส่วนดูเหมือน Seed ปกติ) | ❌ ทำไม่ได้ (โจรเห็นก็รู้ว่ากระดาษโดนฉีก) |
+| **การตรวจสอบย้อนกลับ** | ✅ ตรวจสอบสมการคณิตศาสตร์ได้ | ❌ ไม่มีหลักการทางคณิตศาสตร์รองรับ |
 
-**คุณสมบัติหลัก:**
-
-- **All-or-Nothing (ต้องครบทุกส่วน):** แบ่งเป็น 3 ชิ้น ต้องใช้ครบทั้ง 3 ในการกู้คืน ถ้าหายไป 1 ชิ้น — เงินหายถาวร โจรขโมยได้ 2 ชิ้น ไม่ช่วยให้เดาชิ้นที่ 3 ได้ง่ายขึ้นเลย (Perfect Secrecy)
-- **Plausible Deniability (ป้องกัน $5 Wrench Attack):** แต่ละชิ้นส่วน **เป็น BIP-39 seed ที่ใช้งานได้จริง** สามารถโอน Bitcoin เล็กน้อยเข้าไปทำเป็น "กระเป๋าหลอก" ถ้าโดนบังคับ ส่งมอบชิ้นส่วนให้ไป — โจรไม่มีทางรู้ว่านั่นคือแค่ครึ่งหนึ่งของกุญแจ
+**จุดเด่นที่แท้จริงของ Seed XOR:**
+1. **ทฤษฎีความลับสมบูรณ์แบบ (Perfect Secrecy):** สมมติคุณแบ่ง Seed เป็น 3 ชิ้น (A, B, C) หากแฮ็กเกอร์ขโมยชิ้น A และ B ไปได้ ข้อมูลที่แฮ็กเกอร์มีจะไม่ช่วยให้เดาชิ้น C ได้ง่ายขึ้นเลยแม้แต่นิดเดียว (ข้อมูลที่หลุดไปมีค่าเท่ากับศูนย์)
+2. **สุดยอดการพรางตัว (Plausible Deniability):** ชิ้นส่วนย่อยแต่ละชิ้นของ Seed XOR **เป็น Seed 24 คำที่สามารถนำไปเปิดกระเป๋าใช้งานได้จริง!** คุณสามารถโอน Bitcoin จำนวนเล็กน้อยเข้าไปเก็บไว้เพื่อทำเป็น "กระเป๋าล่อเป้า (Decoy)" ได้ หากวันหนึ่งคุณถูกโจรเอาปืนจ่อหัวข่มขู่ ($5 Wrench Attack) คุณสามารถส่งมอบชิ้นส่วนย่อยให้โจรไปได้เลย โดยที่โจรจะเปิดเจอเงินเล็กน้อยและคิดว่าปล้นสำเร็จแล้ว โดยไม่มีทางรู้เลยว่านั่นคือกลไกซ่อนตู้เซฟใบใหญ่ของคุณ
 
 ---
 
-### ⚔️ เปรียบเทียบวิธีปกป้อง Seed: Multisig vs. Shamir Backup vs. Seed XOR
+### ⚔️ เปรียบเทียบวิธีจัดเก็บ Seed ขั้นสูง (Multisig vs Shamir vs Seed XOR)
 
-มีสามวิธีหลักในการกระจายความเสี่ยงของ Bitcoin seed ให้ไม่มีจุดเดียวที่ถ้าพังแล้วสูญทุกอย่าง แต่ละวิธีแก้ปัญหาเดียวกันด้วยแนวทางที่แตกต่างกัน มีข้อดีข้อเสียต่างกัน และมีความซับซ้อนต่างระดับกัน
+หากคุณมี Bitcoin จำนวนมากและไม่อยากฝากชีวิตไว้กับกระดาษแผ่นเดียว นี่คือ 3 วิธีมาตรฐานระดับโลกที่คุณควรพิจารณา:
 
-#### 🔑 ภาพรวมเปรียบเทียบ
-
-| เกณฑ์ | Multisig | Shamir Backup (SLIP-39) | Seed XOR (BIP-39) |
+| เกณฑ์การพิจารณา | 1️⃣ Multisig (หลายลายเซ็น) | 2️⃣ Shamir Backup (SLIP-39) | 3️⃣ Seed XOR (เครื่องมือนี้) |
 |---|---|---|---|
-| มาตรฐาน | Bitcoin Script / BIP-11 | SLIP-39 (Satoshi Labs) | เข้ากันได้กับ BIP-39 |
-| รูปแบบ | M-of-N (เช่น 2-of-3) | M-of-N (เช่น 2-of-3) | M-of-M (ต้องครบทุกชิ้น) |
-| กู้คืนได้แม้ขาดบางส่วน | ✅ ได้ (M < N) | ✅ ได้ (M < N) | ❌ ไม่ได้ (ต้องครบทุกชิ้น) |
-| Hardware wallet รองรับ | ✅ กว้างขวาง (Trezor, Coldcard, Ledger) | ⚠️ จำกัด (Trezor Model T/Safe) | ✅ ทุก BIP-39 wallet |
-| ต้องใช้ tool พิเศษในการกู้คืน | ✅ Wallet software | ✅ SLIP-39 tool | ✅ XOR calculator (tool นี้) |
-| Plausible deniability | ❌ ไม่มี | ❌ Shares ดูออกว่าเป็น share | ✅ แต่ละ share ดูเหมือน seed จริง |
-| มีหลักฐานทางคณิตศาสตร์รองรับ | ✅ Shamir's Secret Sharing | ✅ Shamir's Secret Sharing | ✅ Information-theoretic |
-| ความซับซ้อน | 🔴 สูงมาก | 🟡 ปานกลาง | 🟢 ต่ำ |
-| จุดเดียวที่ถ้าพังสูญทุกอย่าง | ✅ ไม่มี | ✅ ไม่มี | ⚠️ ไม่มี (เฉพาะเมื่อ M=N) |
-| เปลี่ยน on-chain footprint | 🔴 ใช่ (format address เปลี่ยน) | ❌ ไม่ | ❌ ไม่ |
-| ใช้กับ seed เดิมที่มีอยู่แล้วได้ | ❌ ต้องตั้ง wallet ใหม่ | ❌ ต้อง generate seed ใหม่ | ✅ ใช้กับ seed เดิมได้ทันที |
+| **โครงสร้างระบบ** | ใช้หลายกุญแจเซ็นเพื่อโอนเงิน | ตัดแบ่ง Seed ออกเป็นหลายชิ้น | นำ Seed มาทับซ้อนกันหลายชั้น |
+| **ความยืดหยุ่น (Threshold)** | ✅ ยืดหยุ่น (เช่น มี 3 หาย 1 ยังกู้ได้) | ✅ ยืดหยุ่น (เช่น มี 5 หาย 2 ยังกู้ได้)| ❌ บังคับใช้ครบ (หาย 1 ชิ้นคือเงินสูญถาวร)|
+| **การพรางตัวหลอกโจร** | ❌ ไม่มี (ทิ้งร่องรอยไว้บน Blockchain) | ❌ ไม่มี (คำศัพท์บอกชัดเจนว่าเป็นชิ้นส่วน)| ✅ **สมบูรณ์แบบ (ชิ้นส่วนเนียนเป็นกระเป๋าปกติได้)**|
+| **การใช้กับ Seed เก่าที่มีอยู่** | ❌ ต้องสร้าง Wallet ใหม่ทั้งหมด | ❌ ต้องสร้าง Seed มาตรฐานใหม่ | ✅ **ใช้กับ Seed เดิมของคุณที่มีอยู่แล้วได้ทันที**|
+| **ความซับซ้อนในการจัดการ**| 🔴 สูงมาก (ต้องสำรองไฟล์ Descriptor ให้ดี)| 🟡 ปานกลาง | 🟢 **ต่ำ (จัดการแค่คำศัพท์บนกระดาษ)** |
+
+#### 🎯 คู่มือตัดสินใจ: คุณควรเลือกวิธีไหน?
+* **เลือก Multisig:** ถ้าระดับเงินทุนของคุณเทียบเท่าสถาบัน และต้องการระบบป้องกันความผิดพลาดกรณีทำกุญแจหายบางส่วน
+* **เลือก Shamir Backup:** ถ้าคุณใช้ Hardware Wallet รุ่น Trezor และต้องการระบบที่ "หายบางส่วนก็ยังกู้ได้" โดยไม่ต้องวุ่นวายกับการสำรองไฟล์คอมพิวเตอร์
+* **เลือก Seed XOR:** ถ้าคุณต้องการแยกเก็บ Seed เดิมที่มีอยู่ไปซ่อนหลายๆ สถานที่, ชื่นชอบการป้องกันตัวแบบไร้ร่องรอย และ **มั่นใจ 100% ว่าคุณจะไม่ทำชิ้นส่วนใดชิ้นส่วนหนึ่งหายอย่างแน่นอน**
 
 ---
 
-#### 1️⃣ Multisig (Multi-Signature / หลายลายเซ็น)
+### ✨ คุณสมบัติของโปรแกรมนี้ (Features)
 
-**วิธีทำงาน:** แทนที่จะใช้ private key เดียวควบคุม wallet Multisig กำหนดให้ต้องมี **M ลายเซ็นจาก N keys ที่ต่างกัน** จึงจะอนุมัติ transaction ได้ ตัวอย่าง: 2-of-3 หมายถึง ต้องใช้ key อย่างน้อย 2 จาก 3 ตัว โดยแต่ละ key เป็น device หรือ seed คนละชุดกันอย่างอิสระ
-
-**ข้อดี:**
-- **Threshold M-of-N จริง:** ในระบบ 2-of-3 ถ้าเสีย key 1 ตัวยังกู้คืนได้ด้วย 2 ตัวที่เหลือ
-- **ความปลอดภัยพิสูจน์ได้ทางคณิตศาสตร์** ระดับ transaction — device เดียวถูกแฮ็กไม่สูญเงิน
-- **ผ่านการใช้งานจริงมาแล้ว** — ใช้โดย exchange, สถาบัน, และ Bitcoiners ขั้นสูงมาหลายปี
-- **ผู้โจมตีต้องเจาะหลาย device พร้อมกัน** ทำได้ยากมากในทางปฏิบัติ
-
-**ข้อเสีย:**
-- **ซับซ้อนมาก:** ต้องจัดการ hardware wallet หลายตัว, xpubs, และ wallet descriptors อย่างระมัดระวัง ผิดพลาดในการ backup อาจล็อก fund ถาวร
-- **เปลี่ยน on-chain footprint:** Multisig ใช้ address แบบ P2SH หรือ P2WSH ซึ่งต่างจาก P2WPKH — บน blockchain เห็นออกว่าเป็น Multisig
-- **ใช้กับ seed เดิมไม่ได้** — ต้อง migrate wallet ทั้งหมดไปยังระบบใหม่
-- **ทายาทหรือคนกู้เงินต้องเข้าใจวิธีรวม key** และใช้ wallet software ที่ถูกต้อง
-- **ไม่มี plausible deniability:** การมี Multisig wallet เห็นออกชัดเจนบน blockchain
-- **ความเสี่ยงจาก vendor:** ถ้า hardware wallet รุ่นนั้นหยุดผลิตหรือ software เปลี่ยน อาจมีปัญหาในการกู้คืน
-
-**เหมาะสำหรับ:** การเก็บ Bitcoin มูลค่าสูงมาก, สถาบัน, หรือผู้ใช้ที่มีความรู้ด้านเทคนิคและยอมรับความซับซ้อน
+* **ออฟไลน์ 100% ระดับสุดยอด:** ไม่มี External Links, ไม่มีการดึงข้อมูลจาก CDN ไฟล์ทุกอย่างเขียนจบในไฟล์ `.html` เพียงไฟล์เดียว
+* **ระบบประมวลผล SHA-256 ในตัว:** เขียนด้วย Pure JavaScript ตามมาตรฐาน FIPS 180-4 ไม่พึ่งพาระบบของเบราว์เซอร์ เพื่อให้แน่ใจว่ารันออฟไลน์ได้บนทุกเครื่อง
+* **คำนวณ Checksum แม่นยำ:** เครื่องมือนี้ไม่ได้จับคำที่ 24 มา XOR กันทื่อๆ แต่จะสกัด Entropy บิตสุดท้าย และนำไปเข้าสมการ SHA-256 เพื่อสร้าง Checksum ตัวใหม่ที่ถูกต้องตามมาตรฐาน BIP-39 เป๊ะๆ
+* **โปร่งใส ตรวจสอบได้ (Verify):** มีตารางแสดงผลลัพธ์ Binary แบบ 11-bit ของแต่ละคำให้คุณดูว่าระบบประมวลผลคณิตศาสตร์อย่างไร
+* **ระบบล็อคความปลอดภัย (OPSEC Lock):** หากมีคนพยายามเปิดไฟล์นี้บนเซิร์ฟเวอร์อินเทอร์เน็ต (`http/https`) ระบบจะขึ้นป้ายเตือนสีแดงและล็อคปุ่มคำนวณทันที ป้องกันผู้ใช้เผลอนำ Seed จริงมาป้อนออนไลน์ (แต่มีปุ่มให้กดปลดล็อคเพื่อใช้เป็นกรณีศึกษาได้)
 
 ---
 
-#### 2️⃣ Shamir's Secret Sharing / Shamir Backup (SLIP-39)
+### 📥 วิธีดาวน์โหลดและใช้งาน (ปลอดภัยสูงสุด)
 
-**วิธีทำงาน:** ใช้อัลกอริทึม **Shamir's Secret Sharing (SSS)** แบ่ง secret ออกเป็น N ส่วน โดยนำ M ส่วนใดก็ได้มารวมกันเพื่อกู้คืน SSS ทำงานด้วยการ interpolation polynomial บน finite field ซึ่งต่างจาก XOR ตรงที่ต้องการแค่ M-of-N ไม่ใช่ทั้งหมด
+> ⚠️ **กฎเหล็ก: ห้ามป้อน Seed จริงบนคอมพิวเตอร์ที่ต่ออินเทอร์เน็ต หรือเครื่องที่ใช้ทำงานประจำเด็ดขาด**
 
-**ข้อดี:**
-- **M-of-N threshold จริง (M < N):** ตัวอย่าง 2-of-5 ใช้แค่ 2 จาก 5 share ก็กู้คืนได้ — มี redundancy แท้จริง ถ้าหาย 1 share ยังไม่สูญเงิน
-- **พิสูจน์ทางคณิตศาสตร์แล้ว:** อิงหลักการ Shamir's Secret Sharing ที่ได้รับการยอมรับในวงการวิชาการ
-- **Hardware wallet รองรับ:** Trezor Model T และ Trezor Safe รองรับ SLIP-39 แบบ native
-- **ไม่มีจุดล้มเหลวเดี่ยว** ด้วย redundancy แท้จริง (M < N)
-
-**ข้อเสีย:**
-- **Hardware support จำกัด:** ส่วนใหญ่เป็น Trezor เท่านั้น Coldcard, Ledger, และ hardware wallet อื่นๆ ส่วนใหญ่ไม่รองรับ SLIP-39 ณ ปี 2025
-- **ใช้กับ BIP-39 seed เดิมไม่ได้:** SLIP-39 สร้าง seed ต่างรูปแบบ — ต้อง generate ใหม่และย้าย fund ทั้งหมด
-- **Shares ดูออกว่าเป็น share:** SLIP-39 share ไม่เหมือน BIP-39 seed ปกติ — ไม่มี plausible deniability
-- **ต้องใช้ software ที่รองรับ SLIP-39** ในการ reconstruct ซึ่งไม่ได้มีทั่วไปเหมือน BIP-39
-- **ต้องไว้ใจ device ตอน generate:** ถ้า Trezor ถูก compromise ตอนแบ่ง shares — ทุก share ถูก compromise
-
-**เหมาะสำหรับ:** ผู้ใช้ Trezor ที่ต้องการ M-of-N threshold แบบแท้จริง และยินดีเริ่มต้นด้วย seed ใหม่
+1. **ดาวน์โหลด:** ไปที่ไฟล์ `Seed-XOR.html` ใน GitHub นี้ กดปุ่ม **Raw** แล้วกด `Ctrl+S` (Save as) ลงในคอมพิวเตอร์
+2. **ตรวจสอบความบริสุทธิ์ของไฟล์:** ทำการเช็คค่า SHA-256 Hash ของไฟล์ (ดูวิธีด้านล่าง) ว่าตรงกันหรือไม่ เพื่อป้องกันมัลแวร์
+3. **เตรียมคอมพิวเตอร์:** ก๊อปปี้ไฟล์ใส่แฟลชไดร์ฟ บูตคอมพิวเตอร์ของคุณด้วย **Tails OS** (ระบบปฏิบัติการสำหรับสายลับที่ไม่จำข้อมูล)
+4. **ตัดขาดโลกภายนอก (Air-gapped):** ถอดสาย LAN ดึงปลั๊ก Wi-Fi ออกจากคอมพิวเตอร์
+5. **คำนวณ:** เปิดไฟล์ HTML กรอกชิ้นส่วน Seed และกดคำนวณ Master Seed
+6. **จดบันทึก:** จด Master Seed ลงบนกระดาษหรือตอกลงแผ่นเหล็กให้เรียบร้อย (ห้ามถ่ายรูปหน้าจอเด็ดขาด)
+7. **ทำลายหลักฐาน:** กดปุ่ม **🔥 ล้างเซสชันทั้งหมด** บนหน้าจอ จากนั้นกด **Shut down (ปิดเครื่อง)** ทันที ข้อมูลทั้งหมดจะระเหยหายไปจาก RAM แบบไร้ร่องรอย
 
 ---
 
-#### 3️⃣ Seed XOR (BIP-39 XOR)
+### 🔐 การตรวจสอบความปลอดภัยของไฟล์ (Checksums)
 
-**วิธีทำงาน:** ใช้ **Bitwise XOR** กับ entropy bits ดิบของ BIP-39 seed phrase แบ่ง: สร้าง Share A แบบสุ่มและ Share B โดย `A XOR B = Master Seed` กู้คืน: `Share A XOR Share B = Master Seed` แต่ละ share เป็น BIP-39 seed ที่ใช้ได้จริงอิสระ XOR preserves entropy ทุก bit อย่างสมบูรณ์ — ความปลอดภัยเป็นแบบ information-theoretic (พิสูจน์แล้วว่าเป็นไปไม่ได้ที่จะ reconstruct โดยไม่มีครบทุก share)
-
-**ข้อดี:**
-- **ใช้กับ BIP-39 seed เดิมที่มีอยู่ได้ทันที:** ไม่ต้อง migrate แบ่ง seed ปัจจุบันได้เลยโดยไม่ต้องสร้าง wallet ใหม่
-- **ทุก BIP-39 wallet ตรวจสอบ share ได้:** โหลด share ใดก็ได้เข้า Trezor, Coldcard, Ledger เพื่อยืนยันว่าเปิด (decoy) wallet ได้จริง
-- **Plausible deniability:** แต่ละ share แยกไม่ออกจาก seed จริง โอน BTC เล็กน้อยเข้า share — ส่งมอบถ้าโดนบังคับ โดยที่โจรไม่รู้ว่านั่นคือแค่ครึ่งหนึ่ง
-- **ไม่เปลี่ยน on-chain footprint:** Master Seed ยังสร้าง address เดิม ไม่ต้อง migrate wallet
-- **คณิตศาสตร์ง่ายและตรวจสอบได้:** XOR เป็นการดำเนินการ binary ที่ง่ายที่สุด ตรวจสอบด้วยมือหรือ tool open-source นี้ได้
-- **ไม่พึ่งพา vendor:** ไม่มี format เฉพาะ ใช้ได้กับ open standard ตลอดไป
-- **Information-theoretic security:** พิสูจน์แล้วว่าการรู้ M-1 shares ไม่เปิดเผยข้อมูลเกี่ยวกับ master seed เลยแม้แต่บิตเดียว
-
-**ข้อเสีย:**
-- **M-of-M เท่านั้น (ไม่มี threshold):** All-or-Nothing ถ้าสร้าง 3 shares แล้วหาย 1 อัน — fund สูญถาวร ไม่มีระบบ "ขอแค่ 2-of-3 ก็พอ"
-- **กระบวนการด้วยมือต้องการ tool ที่เชื่อถือได้:** ต้องใช้ XOR calculator ที่ถูกต้อง tool ที่มีบั๊ก (เช่น ที่ไม่ recompute checksum ของคำสุดท้าย) จะสร้าง Master Seed ที่ผิดแต่ดูเหมือนถูก — เปิดผิด wallet
-- **ไม่มี hardware wallet รองรับการแบ่ง natively:** การแบ่ง share ต้องทำภายนอก (tool นี้) hardware wallet จัดการแค่ individual BIP-39 shares ในฐานะ seed ปกติ
-- **Coldcard รองรับ XOR:** Coldcard firmware มีฟีเจอร์ XOR native — แต่ hardware wallet อื่นๆ ส่วนใหญ่ไม่มีฟังก์ชัน combine XOR ในตัว
-
-**เหมาะสำหรับ:** ผู้ถือ Bitcoin self-custody ที่ต้องการแบ่ง seed เดิมเก็บหลายที่ ให้ความสำคัญกับความเรียบง่ายและการตรวจสอบได้ ต้องการ plausible deniability และเข้าใจ trade-off ของ all-or-nothing
-
----
-
-#### 🎯 คู่มือตัดสินใจ: ควรเลือกวิธีไหน?
-
-```
-ต้องการแบ่ง seed เดิมที่มีอยู่โดยไม่ต้องสร้าง wallet ใหม่?
-├── ใช่ → Seed XOR คือตัวเลือกเดียวของคุณ
-└── ไม่ (เริ่มต้นใหม่)
-    ├── ต้องการ M-of-N threshold (ขาดบาง share แต่ยังกู้คืนได้)?
-    │   ├── ใช่ → Shamir Backup (ถ้ามี Trezor) หรือ Multisig
-    │   └── ไม่ (ยอมรับ all-or-nothing ได้) → Seed XOR
-    ├── ต้องการ plausible deniability (ป้องกัน $5 Wrench Attack)?
-    │   ├── ใช่ → Seed XOR
-    │   └── ไม่ → วิธีไหนก็ได้
-    └── ต้องการความปลอดภัยระดับสถาบันด้วย device อิสระหลายตัว?
-        ├── ใช่ → Multisig
-        └── ไม่ → Seed XOR หรือ Shamir
-```
-
-> **คำตอบตรงๆ:** สำหรับผู้ถือ Bitcoin รายบุคคลส่วนใหญ่ **Seed XOR คือสมดุลที่ดีที่สุดระหว่างความปลอดภัย ความเรียบง่าย และความเข้ากันได้** — โดยมีข้อแม้สำคัญที่ต้องเข้าใจและยอมรับ trade-off ของ all-or-nothing
-
----
-
-### ✨ คุณสมบัติเด่น
-
-- **ออฟไลน์ 100%** — ไม่มีการเรียกข้อมูลจากภายนอก ไฟล์เดียวมีทุกอย่างในตัว
-- **BIP-39 Wordlist 2,048 คำ** — ฝังไว้ในไฟล์ตรงๆ ไม่ต้องโหลดเพิ่ม
-- **SHA-256 engine ในตัว** — เขียนด้วย Pure JavaScript ตาม FIPS 180-4 ไม่พึ่ง Web Crypto API
-- **Checksum-aware XOR** — คำนวณ checksum ของคำสุดท้ายถูกต้องตาม BIP-39 (ไม่ใช่แค่ XOR ทื่อๆ)
-- **รองรับหลายขนาด** — 12, 15, 18, 21, 24 คำ และ 2–10 shares
-- **Autocomplete** — พิมพ์ prefix แล้วมีคำขึ้นให้เลือก, Tab/Enter เพื่อยืนยัน
-- **Paste mode** — วาง seed ทั้งชุดในครั้งเดียวได้เลย
-- **ตาราง XOR ระดับ bit** — แสดง Binary 11-bit, Decimal, และ คำ ทุกขั้นตอน ตรวจสอบเองได้
-- **Hard Stop** — ปุ่มคำนวณถูก lock ถ้า checksum ของ share ใดผิด
-- **ตรวจ environment** — ตรวจจับ remote server และ block โดยอัตโนมัติ (มีปุ่ม Demo Mode สำหรับการศึกษา)
-- **Clear Session** — ปุ่มล้างข้อมูลทั้งหมดออกจาก RAM ด้วย `location.reload()`
-
----
-
-### 🧮 หลักการทำงาน BIP-39 XOR (ด้านเทคนิค)
-
-```
-12 คำ = 132 bits = 128 bits entropy + 4 bits checksum
-24 คำ = 264 bits = 256 bits entropy + 8 bits checksum
-
-คำที่ 1–11  : 11 bits แต่ละคำ → entropy ล้วน → XOR ปกติ
-คำที่ 12    : 7 bits entropy (XOR) + 4 bits checksum (คำนวณใหม่จาก SHA-256)
-
-คำที่ 1–23  : 11 bits แต่ละคำ → entropy ล้วน → XOR ปกติ
-คำที่ 24    : 3 bits entropy (XOR) + 8 bits checksum (คำนวณใหม่จาก SHA-256)
-```
-
-Checksum ของ Master Seed **คำนวณใหม่เสมอจาก entropy ที่ XOR แล้ว** — ไม่ใช่นำ checksum ของแต่ละ share มา XOR กัน
-
-SHA-256 self-test รันทุกครั้งที่เปิดหน้าเพื่อยืนยันว่า engine ทำงานถูกต้องก่อนคำนวณ
-
----
-
-### 📥 วิธีดาวน์โหลดและใช้งาน (Secure Mode)
-
-> ⚠️ **ห้ามป้อน Seed จริงบนเครื่องที่ต่ออินเทอร์เน็ตเด็ดขาด**
-
-1. **ดาวน์โหลด:** คลิก `Seed-XOR.html` → **Raw** → `Ctrl+S` บันทึกไฟล์
-2. **ตรวจสอบ checksum** (ดูส่วน Checksums ด้านล่าง) — ยืนยันว่าไฟล์ไม่ถูกดัดแปลง
-3. คัดลอกไฟล์ไปยัง USB ที่สะอาด
-4. Boot เข้า **Tails OS** หรือ OS ออฟไลน์
-5. **ถอดสาย LAN และปิด Wi-Fi อย่างเด็ดขาด**
-6. เปิดไฟล์ `Seed-XOR.html` ในเบราว์เซอร์
-7. ยืนยันว่า SHA-256 self-test แสดง **สีเขียว** ก่อนเริ่มป้อนข้อมูล
-8. ป้อน shares, กดคำนวณ, จด Master Seed ลงกระดาษหรือแผ่นเหล็ก
-9. กด **🔥 ล้างเซสชันทั้งหมด** เมื่อเสร็จแล้ว
-10. **ปิดเครื่องทันที** — RAM ถูกล้างเมื่อปิดไฟ
-
----
-
-### 🔐 การตรวจสอบความถูกต้องของไฟล์ (Checksums)
-
-ตรวจสอบก่อนใช้ทุกครั้ง เพื่อยืนยันว่าไฟล์ไม่ถูกดัดแปลงหรือฝังมัลแวร์
+เพื่อความสบายใจสูงสุด คุณควรตรวจสอบค่า Hash ของไฟล์ก่อนนำไปรันออฟไลน์:
 
 **ชื่อไฟล์:** `Seed-XOR.html`
 
-| Algorithm | Hash |
+| อัลกอริทึม | รหัส Hash ที่ถูกต้อง |
 |---|---|
 | **SHA-256** | `00fa0af4997d0ace1cd4ec57cf7be906e8d80de8eaca335716576d5a7397bcae` |
 | **MD5** | `b778e002d05353476d5ecfc503172db9` |
 
-#### วิธีตรวจสอบบนระบบปฏิบัติการต่างๆ:
-
-**Windows (PowerShell)**
-```powershell
-Get-FileHash .\Seed-XOR.html -Algorithm SHA256
-Get-FileHash .\Seed-XOR.html -Algorithm MD5
-```
-
-**macOS (Terminal)**
-```bash
-shasum -a 256 Seed-XOR.html
-md5 Seed-XOR.html
-```
-
-**Linux / Tails OS (Terminal)**
-```bash
-sha256sum Seed-XOR.html
-md5sum Seed-XOR.html
-```
+**วิธีตรวจสอบบนระบบของคุณ:**
+* **Windows (เปิด PowerShell):** พิมพ์คำสั่ง `Get-FileHash .\Seed-XOR.html -Algorithm SHA256`
+* **macOS / Linux / Tails OS (เปิด Terminal):** พิมพ์คำสั่ง `sha256sum Seed-XOR.html`
 
 ---
 
-### 🔒 Security Model (ภาษาไทย)
+### 🤝 เครดิตผู้พัฒนา
 
-- **ไม่มีการเรียกเครือข่าย** — ตรวจสอบ source code ได้: ไม่มี `fetch()`, `XMLHttpRequest`, หรือ `<script src>` ภายนอก
-- **ไม่ใช้ localStorage** — ข้อมูลทั้งหมดอยู่ใน memory เท่านั้น ปิดหน้าต่าง = ล้างทันที
-- **Input sanitization** — ทุก input ผ่าน BIP-39 wordlist filter ก่อน render → ไม่มีช่องโหว่ XSS
-- **Hard stop** — ถ้า share ใดมี checksum ผิด ปุ่มคำนวณจะถูก disable ทันที ไม่มีปุ่ม "ยืนยันทำต่อ"
-- **Defense in depth** — OPSEC lock ทำงาน 3 ชั้น: `IS_UNSAFE_ENV`, `updateCalcBtn()`, และ `calculate()`
-
----
-
-### 🤝 เครดิต
-
-- **ผู้พัฒนา:** [Chollatis Bitcoiner](https://github.com/chontit) — นักบินกองทัพอากาศและนักการศึกษา Bitcoin ชุมชน Korat Bitcoiner
-- **AI Co-pilot:** Claude (Anthropic) — สถาปัตยกรรม, โค้ด, ความปลอดภัย
-- **Security Audit:** Gemini (Google) — ตรวจสอบโค้ด 4 รอบ, ค้นพบ edge cases
-- **แพลตฟอร์มการศึกษา Bitcoin:** [learning.chontit.win](https://learning.chontit.win)
-- **BIP-39 Wordlist:** [trezor/python-mnemonic](https://github.com/trezor/python-mnemonic)
-- **มาตรฐานอ้างอิง:** [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) · [FIPS 180-4](https://csrc.nist.gov/publications/detail/fips/180/4/final)
+- **พัฒนาโดย:** [Chollatis Bitcoiner](https://github.com/chontit) — เจ้าหน้าที่การบินทหาร และนักการศึกษา Bitcoin ชุมชน Korat Bitcoiner
+- **AI Co-pilot:** ร่วมออกแบบสถาปัตยกรรมและเขียนโค้ดโดย Claude (Anthropic)
+- **Security Audit:** ตรวจสอบตรรกะ ช่องโหว่ และสกัดจับ Bug โดย Gemini (Google)
+- **แพลตฟอร์มการศึกษา:** [learning.chontit.win](https://learning.chontit.win)
 
 ---
-
 *Don't Trust, Verify ⚡*
