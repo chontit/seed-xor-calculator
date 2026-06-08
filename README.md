@@ -148,7 +148,7 @@ md5sum Seed-XOR.html
 - **AI Co-pilot:** Claude (Anthropic) — architecture, code, security hardening
 - **Security Audit:** Gemini (Google) — 4-round code review, edge case discovery
 - **Bitcoin education platform:** [learning.chontit.win](https://learning.chontit.win)
-- **BIP-39 Wordlist source:** [trezor/python-mnemonic](https://github.com/trezor/python-mnemonic)
+- **BIP-39 Wordlist:** [github.com/bitcoin/bips/blob/master/bip-0039/english.txt](https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt)
 - **Specification:** [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki), [FIPS 180-4 SHA-256](https://csrc.nist.gov/publications/detail/fips/180/4/final)
 
 ---
