@@ -15,7 +15,9 @@
 
 ## 🇬🇧 English
 
-A highly secure, **100% offline**, single-file HTML tool for reconstructing a BIP-39 Master Seed from multiple shares using **Bitwise XOR** operations. Designed with paranoia-level OPSEC in mind. Built for air-gapped systems like **Tails OS**.
+A highly secure, **100% offline**, single-file HTML tool for reconstructing a BIP-39 Master Seed from multiple shares using **Bitwise XOR** operations. Designed with paranoia-level OPSEC in mind. Built for air-gapped systems like **Tails OS**. 
+
+**Available in two standalone versions: English (`Seed-XOR_english.html`) and Thai (`Seed-XOR_thai.html`).**
 
 Co-developed with Claude AI · Audited by Gemini AI · Built by [@chontit](https://github.com/chontit)
 
@@ -42,8 +44,6 @@ Unlike the dangerous practice of physically cutting a paper seed backup in half 
 
 ### ⚔️ Seed Backup Methods Compared: Multisig vs. Shamir vs. Seed XOR
 
-There are three primary cryptographic methods for eliminating a single point of failure in Bitcoin custody. Here is how they compare:
-
 | Criteria | 1️⃣ Multisig | 2️⃣ Shamir (SLIP-39) | 3️⃣ Seed XOR (This tool) |
 |---|---|---|---|
 | **Structure** | M-of-N keys signing a transaction | M-of-N shares to recreate a seed | M-of-M shares to recreate a seed |
@@ -51,11 +51,6 @@ There are three primary cryptographic methods for eliminating a single point of 
 | **Plausible Deniability**| ❌ No (Visible on-chain) | ❌ No (Words identify as shares) | ✅ **Yes (Shares look like real seeds)** |
 | **Use Existing Seed?** | ❌ No (Requires new setup) | ❌ No (Requires new SLIP-39 setup) | ✅ **Yes (Works with any existing seed)** |
 | **Complexity Level** | 🔴 High (Requires xpub/descriptor management) | 🟡 Medium | 🟢 **Low (Just seed words)** |
-
-#### 🎯 Decision Guide: Which method is right for you?
-* **Choose Multisig** if you are an institution or hold massive wealth and need true threshold security across different devices.
-* **Choose Shamir Backup** if you use a Trezor and want a threshold backup (e.g., 2-of-3) using only paper, but don't care about plausible deniability.
-* **Choose Seed XOR** if you want to split an **existing** seed across multiple physical locations, demand absolute plausible deniability against physical threats, and strictly understand the "All-or-Nothing" trade-off.
 
 ---
 
@@ -75,7 +70,7 @@ There are three primary cryptographic methods for eliminating a single point of 
 
 > ⚠️ **NEVER enter your real seed phrase on an internet-connected device.**
 
-1. **Download:** Right-click `Seed-XOR.html` → **Save link as...**
+1. **Download:** Choose your preferred language file (`Seed-XOR_english.html` or `Seed-XOR_thai.html`). Right-click → **Save link as...**
 2. **Verify Checksum:** Ensure the file hash matches the values provided below.
 3. **Go Offline:** Transfer the file to a USB drive and boot into **Tails OS** (or a clean, offline computer). Physically unplug the LAN cable and turn off Wi-Fi.
 4. **Calculate:** Open the file, enter your shares, and calculate your Master Seed.
@@ -86,22 +81,31 @@ There are three primary cryptographic methods for eliminating a single point of 
 
 ### 🔐 File Verification (Checksums)
 
-**Filename:** `Seed-XOR.html`
+To ensure the files have not been tampered with or intercepted, verify the checksums before use:
 
+**1. English Version (`Seed-XOR_english.html`)**
+| Algorithm | Hash |
+|---|---|
+| **SHA-256** | `7bd489209872166db1b2aa87945f184a9d2c8c7bccccc56ba0ffbd78f5ba7b6d` |
+| **MD5** | `58746ad8203a400dd26dae0ee257bd37` |
+
+**2. Thai Version (`Seed-XOR_thai.html`)**
 | Algorithm | Hash |
 |---|---|
 | **SHA-256** | `00fa0af4997d0ace1cd4ec57cf7be906e8d80de8eaca335716576d5a7397bcae` |
 | **MD5** | `b778e002d05353476d5ecfc503172db9` |
 
 **Verification Commands:**
-* **Windows (PowerShell):** `Get-FileHash .\Seed-XOR.html -Algorithm SHA256`
-* **macOS / Linux:** `shasum -a 256 Seed-XOR.html`
+* **Windows (PowerShell):** `Get-FileHash .\<filename>.html -Algorithm SHA256`
+* **macOS / Linux:** `shasum -a 256 <filename>.html`
 
 ---
 
 ## 🇹🇭 ภาษาไทย
 
-เครื่องมือคำนวณ **Seed XOR** สำหรับมาตรฐาน BIP-39 แบบออฟไลน์ 100% ในรูปแบบไฟล์เดียวจบ (Single-file HTML) ออกแบบมาเพื่อความปลอดภัยสูงสุดระดับ Cypherpunk (OPSEC ระดับสูงสุด) เหมาะสำหรับใช้งานบนระบบที่ถูกตัดขาดจากอินเทอร์เน็ต (Air-gapped) เช่น Tails OS
+เครื่องมือคำนวณ **Seed XOR** สำหรับมาตรฐาน BIP-39 แบบออฟไลน์ 100% ออกแบบมาเพื่อความปลอดภัยสูงสุดระดับ Cypherpunk (OPSEC ระดับสูงสุด) เหมาะสำหรับใช้งานบนระบบที่ถูกตัดขาดจากอินเทอร์เน็ต (Air-gapped) เช่น Tails OS
+
+**โปรเจกต์นี้มีให้เลือกใช้งาน 2 ภาษาในรูปแบบไฟล์เดียวจบ: ภาษาอังกฤษ (`Seed-XOR_english.html`) และภาษาไทย (`Seed-XOR_thai.html`)**
 
 พัฒนาร่วมกับ Claude AI · ตรวจสอบความปลอดภัยโดย Gemini AI · สร้างโดย [@chontit](https://github.com/chontit)
 
@@ -129,8 +133,6 @@ There are three primary cryptographic methods for eliminating a single point of 
 
 ### ⚔️ เปรียบเทียบวิธีจัดเก็บ Seed ขั้นสูง (Multisig vs Shamir vs Seed XOR)
 
-หากคุณมี Bitcoin จำนวนมากและไม่อยากฝากชีวิตไว้กับกระดาษแผ่นเดียว นี่คือ 3 วิธีมาตรฐานระดับโลกที่คุณควรพิจารณา:
-
 | เกณฑ์การพิจารณา | 1️⃣ Multisig (หลายลายเซ็น) | 2️⃣ Shamir Backup (SLIP-39) | 3️⃣ Seed XOR (เครื่องมือนี้) |
 |---|---|---|---|
 | **โครงสร้างระบบ** | ใช้หลายกุญแจเซ็นเพื่อโอนเงิน | ตัดแบ่ง Seed ออกเป็นหลายชิ้น | นำ Seed มาทับซ้อนกันหลายชั้น |
@@ -138,11 +140,6 @@ There are three primary cryptographic methods for eliminating a single point of 
 | **การพรางตัวหลอกโจร** | ❌ ไม่มี (ทิ้งร่องรอยไว้บน Blockchain) | ❌ ไม่มี (คำศัพท์บอกชัดเจนว่าเป็นชิ้นส่วน)| ✅ **สมบูรณ์แบบ (ชิ้นส่วนเนียนเป็นกระเป๋าปกติได้)**|
 | **การใช้กับ Seed เก่าที่มีอยู่** | ❌ ต้องสร้าง Wallet ใหม่ทั้งหมด | ❌ ต้องสร้าง Seed มาตรฐานใหม่ | ✅ **ใช้กับ Seed เดิมของคุณที่มีอยู่แล้วได้ทันที**|
 | **ความซับซ้อนในการจัดการ**| 🔴 สูงมาก (ต้องสำรองไฟล์ Descriptor ให้ดี)| 🟡 ปานกลาง | 🟢 **ต่ำ (จัดการแค่คำศัพท์บนกระดาษ)** |
-
-#### 🎯 คู่มือตัดสินใจ: คุณควรเลือกวิธีไหน?
-* **เลือก Multisig:** ถ้าระดับเงินทุนของคุณเทียบเท่าสถาบัน และต้องการระบบป้องกันความผิดพลาดกรณีทำกุญแจหายบางส่วน
-* **เลือก Shamir Backup:** ถ้าคุณใช้ Hardware Wallet รุ่น Trezor และต้องการระบบที่ "หายบางส่วนก็ยังกู้ได้" โดยไม่ต้องวุ่นวายกับการสำรองไฟล์คอมพิวเตอร์
-* **เลือก Seed XOR:** ถ้าคุณต้องการแยกเก็บ Seed เดิมที่มีอยู่ไปซ่อนหลายๆ สถานที่, ชื่นชอบการป้องกันตัวแบบไร้ร่องรอย และ **มั่นใจ 100% ว่าคุณจะไม่ทำชิ้นส่วนใดชิ้นส่วนหนึ่งหายอย่างแน่นอน**
 
 ---
 
@@ -160,7 +157,7 @@ There are three primary cryptographic methods for eliminating a single point of 
 
 > ⚠️ **กฎเหล็ก: ห้ามป้อน Seed จริงบนคอมพิวเตอร์ที่ต่ออินเทอร์เน็ต หรือเครื่องที่ใช้ทำงานประจำเด็ดขาด**
 
-1. **ดาวน์โหลด:** ไปที่ไฟล์ `Seed-XOR.html` ใน GitHub นี้ กดปุ่ม **Raw** แล้วกด `Ctrl+S` (Save as) ลงในคอมพิวเตอร์
+1. **ดาวน์โหลด:** เลือกไฟล์ในภาษาที่คุณต้องการ (`Seed-XOR_english.html` หรือ `Seed-XOR_thai.html`) บน GitHub นี้ กดคลิกขวาที่ไฟล์ แล้วเลือก **Save link as...** ลงในคอมพิวเตอร์
 2. **ตรวจสอบความบริสุทธิ์ของไฟล์:** ทำการเช็คค่า SHA-256 Hash ของไฟล์ (ดูวิธีด้านล่าง) ว่าตรงกันหรือไม่ เพื่อป้องกันมัลแวร์
 3. **เตรียมคอมพิวเตอร์:** ก๊อปปี้ไฟล์ใส่แฟลชไดร์ฟ บูตคอมพิวเตอร์ของคุณด้วย **Tails OS** (ระบบปฏิบัติการสำหรับสายลับที่ไม่จำข้อมูล)
 4. **ตัดขาดโลกภายนอก (Air-gapped):** ถอดสาย LAN ดึงปลั๊ก Wi-Fi ออกจากคอมพิวเตอร์
@@ -174,22 +171,27 @@ There are three primary cryptographic methods for eliminating a single point of 
 
 เพื่อความสบายใจสูงสุด คุณควรตรวจสอบค่า Hash ของไฟล์ก่อนนำไปรันออฟไลน์:
 
-**ชื่อไฟล์:** `Seed-XOR.html`
+**1. เวอร์ชันภาษาอังกฤษ (`Seed-XOR_english.html`)**
+| อัลกอริทึม | รหัส Hash ที่ถูกต้อง |
+|---|---|
+| **SHA-256** | `7bd489209872166db1b2aa87945f184a9d2c8c7bccccc56ba0ffbd78f5ba7b6d` |
+| **MD5** | `58746ad8203a400dd26dae0ee257bd37` |
 
+**2. เวอร์ชันภาษาไทย (`Seed-XOR_thai.html`)**
 | อัลกอริทึม | รหัส Hash ที่ถูกต้อง |
 |---|---|
 | **SHA-256** | `00fa0af4997d0ace1cd4ec57cf7be906e8d80de8eaca335716576d5a7397bcae` |
 | **MD5** | `b778e002d05353476d5ecfc503172db9` |
 
 **วิธีตรวจสอบบนระบบของคุณ:**
-* **Windows (เปิด PowerShell):** พิมพ์คำสั่ง `Get-FileHash .\Seed-XOR.html -Algorithm SHA256`
-* **macOS / Linux / Tails OS (เปิด Terminal):** พิมพ์คำสั่ง `sha256sum Seed-XOR.html`
+* **Windows (เปิด PowerShell):** พิมพ์คำสั่ง `Get-FileHash .\<ชื่อไฟล์>.html -Algorithm SHA256`
+* **macOS / Linux / Tails OS (เปิด Terminal):** พิมพ์คำสั่ง `sha256sum <ชื่อไฟล์>.html`
 
 ---
 
 ### 🤝 เครดิตผู้พัฒนา
 
-- **พัฒนาโดย:** [Chollatis Bitcoiner](https://github.com/chontit) — เจ้าหน้าที่การบินทหาร และนักการศึกษา Bitcoin ชุมชน Korat Bitcoiner
+- **พัฒนาโดย:** [Chollatis Bitcoiner](https://github.com/chontit) — Korat Bitcoiner
 - **AI Co-pilot:** ร่วมออกแบบสถาปัตยกรรมและเขียนโค้ดโดย Claude (Anthropic)
 - **Security Audit:** ตรวจสอบตรรกะ ช่องโหว่ และสกัดจับ Bug โดย Gemini (Google)
 - **แพลตฟอร์มการศึกษา:** [learning.chontit.win](https://learning.chontit.win)
