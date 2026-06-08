@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seed XOR Calculator — Don't Trust, Verify</title>
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#0d0d0d; --panel:#141414; --border:#2a2a2a;
+      --orange:#f7931a; --green:#00cc66; --red:#cc3333;
+      --yellow:#ccaa00; --blue:#4488ff; --dim:#555; --text:#ccc;
+      --mono:'Courier New',Courier,monospace;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--mono); padding:20px; line-height:1.6; }
+    h1   { color:var(--orange); font-size:1.4em; margin-bottom:4px; }
+    .subtitle { color:var(--dim); font-size:0.8em; margin-bottom:16px; }
+    .warn { background:#1a0000; border-left:3px solid var(--red); padding:10px 14px; margin-bottom:20px; font-size:0.82em; color:#ff8888; }
+    .section { border:1px solid var(--border); background:var(--panel); padding:16px; margin-bottom:16px; }
+    .section-title { color:var(--orange); font-size:0.9em; margin-bottom:12px; text-transform:uppercase; letter-spacing:1px; }
+    .row   { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:14px; align-items:flex-end; }
+    .field { display:flex; flex-direction:column; gap:4px; }
+    label  { color:var(--dim); font-size:0.78em; text-transform:uppercase; letter-spacing:1px; }
+    select { background:#000; border:1px solid var(--border); color:var(--orange); font-family:var(--mono); font-size:0.9em; padding:6px 10px; cursor:pointer; }
+
+    /* ── Share block ── */
+    .share-block { margin-bottom:18px; }
+    .share-header { display:flex; justify-content:space-between; margin-bottom:5px; align-items:center; flex-wrap:wrap; gap:6px; }
+    .share-name { color:var(--orange); font-size:0.82em; }
+    .share-meta { display:flex; align-items:center; gap:10px; }
+    .share-wc   { color:var(--dim); font-size:0.75em; }
+
+    /* ── Word badges: Selected words area ── */
+    .word-badges {
+      display:flex; flex-wrap:wrap; gap:4px; align-items:center;
+      min-height:36px; padding:6px 8px;
+      background:#050505;
+      border:1px solid var(--border);
+      border-bottom:none;
+      cursor:text;
+    }
+    .badges-label {
+      width:100%; font-size:0.68em; color:var(--dim);
+      letter-spacing:1px; text-transform:uppercase;
+      margin-bottom:3px; padding-bottom:3px;
+      border-bottom:1px solid #1a1a1a;
+    }
+    .badge {
+      display:inline-flex; align-items:center; gap:4px;
+      background:#0a1a0a; border:1px solid #1a5a1a;
+      padding:2px 6px; font-size:0.8em; color:var(--green); white-space:nowrap;
+    }
+    .badge .bnum { color:var(--dim); font-size:0.75em; min-width:14px; }
+    .badge .bdel { color:#2a4a2a; cursor:pointer; padding:0 1px; font-size:0.88em; }
+    .badge .bdel:hover { color:var(--red); }
+    .badges-placeholder { color:#333; font-size:0.78em; padding:2px 0; font-style:italic; }
+
+    /* ── Input area: Type/Paste area ── */
+    .input-area {
+      position:relative;
+    }
+    .input-label {
+      position:absolute; left:0; top:0; bottom:0;
+      display:flex; align-items:center;
+      padding:0 8px;
+      font-size:0.68em; color:var(--orange);
+      letter-spacing:1px; pointer-events:none;
+      text-transform:uppercase; opacity:0.7;
+    }
+    .word-input {
+      width:100%; background:#0a0500;
+      border:1px solid var(--orange);
+      border-top:1px dashed #3a2000;
+      color:var(--text); font-family:var(--mono); font-size:0.88em;
+      padding:8px 120px 8px 10px;
+      outline:none; display:block;
+    }
+    .word-input::placeholder         { color:#3a2800; }
+    .word-input:focus                { border-color:var(--orange); background:#0d0700; box-shadow:0 0 0 1px #3a1a00 inset; }
+    .word-input.state-ok             { border-color:var(--green);  background:#000d00; border-top:1px dashed #1a3a1a; }
+    .word-input.state-ok::placeholder{ color:#1a3a1a; }
+    .word-input.state-warn           { border-color:var(--yellow); background:#0a0800; }
+    .word-input.state-err            { border-color:var(--red);    background:#0a0000; }
+
+    .input-hint-overlay {
+      position:absolute; right:0; top:0; bottom:0;
+      display:flex; align-items:center; padding:0 10px;
+      font-size:0.72em; color:var(--dim); pointer-events:none;
+      white-space:nowrap;
+    }
+
+    .btn-clear {
+      background:none; border:1px solid var(--red); color:var(--red);
+      font-family:var(--mono); font-size:0.72em; padding:2px 8px;
+      cursor:pointer; white-space:nowrap;
+    }
+    .btn-clear:hover { background:#1a0000; }
+
+    .cs-detail { font-size:0.74em; margin-top:4px; min-height:1.1em; color:var(--dim); }
+    .cs-detail.ok   { color:var(--green);  }
+    .cs-detail.fail { color:var(--red);    }
+    .cs-detail.warn { color:var(--yellow); }
+
+    /* ── Global autocomplete popup ── */
+    #ac-popup {
+      position:fixed; background:#0a0a0a;
+      border:1px solid var(--orange);
+      z-index:99999; max-height:240px; overflow-y:auto;
+      font-family:var(--mono); font-size:0.85em;
+      min-width:220px; display:none;
+      box-shadow:0 6px 24px rgba(0,0,0,0.9);
+    }
+    #ac-popup.open { display:block; }
+    #ac-hint {
+      padding:4px 10px; color:var(--dim); font-size:0.78em;
+      border-bottom:1px solid var(--border); white-space:nowrap;
+      background:#050505;
+    }
+    .ac-item {
+      padding:5px 10px; cursor:pointer; color:var(--text);
+      display:flex; align-items:center; white-space:nowrap;
+    }
+    .ac-item:hover, .ac-item.sel { background:#1a1200; color:var(--orange); }
+    .ac-match { color:var(--orange); font-weight:bold; }
+    .ac-rest  { color:var(--text); }
+    .ac-item.sel .ac-rest { color:var(--orange); }
+    .ac-idx   { color:var(--dim); font-size:0.78em; margin-left:auto; padding-left:12px; }
+
+    @keyframes flash-green { 0%{background:#002200} 100%{background:#000} }
+    @keyframes flash-red   { 0%{background:#220000} 100%{background:#000} }
+    .flash-ok  { animation:flash-green 0.5s ease-out; }
+    .flash-err { animation:flash-red   0.5s ease-out; }
+
+    button#calc-btn { background:#000; border:1px solid var(--orange); color:var(--orange); font-family:var(--mono); font-size:0.95em; padding:10px 24px; cursor:pointer; margin-top:14px; width:100%; text-transform:uppercase; letter-spacing:2px; }
+    button#calc-btn:hover { background:#1a0e00; }
+    #status { margin-top:10px; padding:8px 12px; font-size:0.82em; display:none; }
+    #status.err { display:block; background:#1a0000; border-left:3px solid var(--red);   color:#ff8888; }
+    #status.ok  { display:block; background:#001a08; border-left:3px solid var(--green); color:#88ffbb; }
+
+    #output { display:none; }
+    .seed-box  { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
+    .seed-word { display:inline-flex; gap:5px; background:#001a08; border:1px solid var(--green); padding:3px 8px; font-size:0.85em; }
+    .seed-word .num { color:var(--dim); font-size:0.78em; }
+    .seed-word .w   { color:var(--green); font-weight:bold; }
+    .master-cs-box { margin-top:12px; padding:10px 14px; font-size:0.8em; border-left:3px solid; }
+    .master-cs-box.ok   { background:#001a08; border-color:var(--green); color:var(--green); }
+    .master-cs-box.fail { background:#1a0000; border-color:var(--red);   color:#ff8888; }
+    .master-cs-box .cs-line { color:var(--dim); margin-top:4px; font-size:0.9em; }
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:0.78em; margin-top:10px; }
+    th { text-align:left; padding:6px 8px; color:var(--dim); border-bottom:1px solid var(--border); font-size:0.82em; text-transform:uppercase; white-space:nowrap; }
+    td { padding:5px 8px; vertical-align:top; border-bottom:1px solid #1a1a1a; }
+    tr:hover td { background:#1a1a1a; }
+    tr.last-word-row td { background:#1a1400; }
+    tr.cs-summary-row td { background:#0d1a0d; border-top:1px solid #2a3a2a; }
+    .b0{color:#333;}.b1{color:var(--blue);}.br{color:var(--orange);}.bw{color:var(--green);}.bc{color:var(--yellow);}
+    .line{white-space:nowrap;margin-bottom:2px;}.dim{color:var(--dim);}
+    button.copy-btn { background:none; border:1px solid var(--dim); color:var(--dim); font-family:var(--mono); font-size:0.78em; padding:4px 12px; cursor:pointer; margin-top:8px; }
+    button.copy-btn:hover { border-color:var(--green); color:var(--green); }
+    footer { margin-top:30px; color:var(--dim); font-size:0.72em; text-align:center; }
+    .selftest { font-size:0.75em; margin-bottom:10px; }
+    .selftest.ok   { color:var(--green); }
+    .selftest.fail { color:var(--red); font-weight:bold; }
+    .legend { font-size:0.74em; color:var(--dim); margin-bottom:8px; line-height:1.8; }
+    .struct-table { font-size:0.76em; color:var(--dim); border-collapse:collapse; margin:6px 0 12px 0; }
+    .struct-table th { color:var(--dim); padding:3px 10px 3px 0; font-weight:normal; border-bottom:1px solid var(--border); }
+    .struct-table td { padding:3px 10px 3px 0; }
+    .struct-table .hi{color:var(--text);} .struct-table .cs{color:var(--yellow);} .struct-table .ent{color:var(--blue);}
+  </style>
+</head>
+<body>
+
+<div id="ac-popup"><div id="ac-hint"></div></div>
+
+<h1>⊕ Seed XOR Calculator</h1>
+<div class="subtitle">BIP-39 · Bitwise XOR · Checksum-aware · Offline 100% · by Chollatis Bitcoiner</div>
+
+<div class="warn">
+  ⚠ Operations Security: Must be used on an air-gapped system disconnected from the internet (Recommendation: Tails OS in Offline Mode).<br>
+  NEVER enter a real Seedphrase on an internet-connected device — for learning purposes, strictly use dummy seedphrases.
+</div>
+
+<div class="section">
+  <div class="section-title">⚙ Settings</div>
+  <div class="row">
+    <div class="field">
+      <label>Seedphrase Length (Words)</label>
+      <select id="seed-len" onchange="buildInputs()">
+        <option value="12">12 Words</option>
+        <option value="15">15 Words</option>
+        <option value="18">18 Words</option>
+        <option value="21">21 Words</option>
+        <option value="24" selected>24 Words</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Number of Seedphrases (Shares, M-of-M)</label>
+      <select id="num-shares" onchange="buildInputs()">
+        <option value="2">2 Shares</option>
+        <option value="3">3 Shares</option>
+        <option value="4">4 Shares</option>
+        <option value="5">5 Shares</option>
+        <option value="6">6 Shares</option>
+        <option value="7">7 Shares</option>
+        <option value="8">8 Shares</option>
+        <option value="9">9 Shares</option>
+        <option value="10">10 Shares</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="font-size:0.78em;color:var(--dim);margin-bottom:10px;border:1px solid var(--border);padding:10px;">
+    <strong style="color:var(--text);">BIP-39 Binary Structure</strong><br>
+    <table class="struct-table">
+      <tr><th>Words</th><th>Total</th><th><span class="ent">Entropy</span></th><th><span class="cs">Checksum</span></th><th>Last word</th></tr>
+      <tr><td class="hi">12</td><td>132 bits</td><td class="ent">128 bits</td><td class="cs">4 bits</td><td><span class="ent">7</span>+<span class="cs">4</span> bits</td></tr>
+      <tr><td class="hi">15</td><td>165 bits</td><td class="ent">160 bits</td><td class="cs">5 bits</td><td><span class="ent">6</span>+<span class="cs">5</span> bits</td></tr>
+      <tr><td class="hi">18</td><td>198 bits</td><td class="ent">192 bits</td><td class="cs">6 bits</td><td><span class="ent">5</span>+<span class="cs">6</span> bits</td></tr>
+      <tr><td class="hi">21</td><td>231 bits</td><td class="ent">224 bits</td><td class="cs">7 bits</td><td><span class="ent">4</span>+<span class="cs">7</span> bits</td></tr>
+      <tr><td class="hi">24</td><td>264 bits</td><td class="ent">256 bits</td><td class="cs">8 bits</td><td><span class="ent">3</span>+<span class="cs">8</span> bits</td></tr>
+    </table>
+  </div>
+
+  <div id="sha256-selftest" class="selftest"></div>
+  <div id="shares-container"></div>
+  <button id="calc-btn" onclick="calculate()" disabled style="opacity:0.35;cursor:not-allowed;" title="Please enter all shares completely with valid checksums first.">⊕ Calculate XOR Master Seed</button>
+  <div id="status"></div>
+</div>
+
+<div id="output">
+  <div class="section">
+    <div class="section-title">✓ Reconstructed Master Seed</div>
+    <div class="seed-box" id="result-words"></div>
+    <button class="copy-btn" onclick="copySeed()">[ Copy Seed ]</button>
+    <div id="master-cs-result"></div>
+  </div>
+  <div class="section">
+    <div class="section-title">📋 Step-by-Step XOR Verification</div>
+    <div class="legend">
+      <span class="b1">■</span> bit 1 share &nbsp;|&nbsp;<span class="br">■</span> XOR result &nbsp;|&nbsp;
+      <span class="bc">■</span> checksum &nbsp;|&nbsp;<span class="bw">■</span> result word &nbsp;|&nbsp;
+      <span style="color:var(--yellow)">★</span> last word<br>
+      <strong style="color:var(--text)">DEC</strong> = index 0–2047 in BIP-39 wordlist
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Share → Word (DEC)</th><th>11-bit Binary</th><th>XOR Operation</th><th>Result BIN | DEC | Word</th></tr></thead>
+        <tbody id="verify-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;margin-top:24px;">
+  <button onclick="if(confirm('🔥 Clear entire session?\nThe page will reload — the Master Seed will disappear immediately.')) location.reload();" style="background:none;border:1px solid var(--red);color:var(--red);font-family:var(--mono);font-size:0.82em;padding:7px 20px;cursor:pointer;letter-spacing:1px;">🔥 Clear Session</button>
+  <div style="font-size:0.7em;color:var(--dim);margin-top:5px;">Click after writing down your Master Seed to clear data from RAM.</div>
+</div>
+<footer>Seed XOR Calculator by Chollatis Bitcoiner · Fully Offline Mode · SHA-256 function included<br>Powered by Claude AI | Don't Trust, Verify ⚡</footer>
+
+<script>
+// ─────────────────────────────────────────────────────────────────
+// BIP-39 Wordlist + Prefix Index
+// ─────────────────────────────────────────────────────────────────
+var WORDS = "abandon ability able about above absent absorb abstract absurd abuse access accident account accuse achieve acid acoustic acquire across act action actor actress actual adapt add addict address adjust admit adult advance advice aerobic affair afford afraid again age agent agree ahead aim air airport aisle alarm album alcohol alert alien all alley allow almost alone alpha already also alter always amateur amazing among amount amused analyst anchor ancient anger angle angry animal ankle announce annual another answer antenna antique anxiety any apart apology appear apple approve april arch arctic area arena argue arm armed armor army around arrange arrest arrive arrow art artefact artist artwork ask aspect assault asset assist assume asthma athlete atom attack attend attitude attract auction audit august aunt author auto autumn average avocado avoid awake aware away awesome awful awkward axis baby bachelor bacon badge bag balance balcony ball bamboo banana banner bar barely bargain barrel base basic basket battle beach bean beauty because become beef before begin behave behind believe below belt bench benefit best betray better between beyond bicycle bid bike bind biology bird birth bitter black blade blame blanket blast bleak bless blind blood blossom blouse blue blur blush board boat body boil bomb bone bonus book boost border boring borrow boss bottom bounce box boy bracket brain brand brass brave bread breeze brick bridge brief bright bring brisk broccoli broken bronze broom brother brown brush bubble buddy budget buffalo build bulb bulk bullet bundle bunker burden burger burst bus business busy butter buyer buzz cabbage cabin cable cactus cage cake call calm camera camp can canal cancel candy cannon canoe canvas canyon capable capital captain car carbon card cargo carpet carry cart case cash casino castle casual cat catalog catch category cattle caught cause caution cave ceiling celery cement census century cereal certain chair chalk champion change chaos chapter charge chase chat cheap check cheese chef cherry chest chicken chief child chimney choice choose chronic chuckle chunk churn cigar cinnamon circle citizen city civil claim clap clarify claw clay clean clerk clever click client cliff climb clinic clip clock clog close cloth cloud clown club clump cluster clutch coach coast coconut code coffee coil coin collect color column combine come comfort comic common company concert conduct confirm congress connect consider control convince cook cool copper copy coral core corn correct cost cotton couch country couple course cousin cover coyote crack cradle craft cram crane crash crater crawl crazy cream credit creek crew cricket crime crisp critic crop cross crouch crowd crucial cruel cruise crumble crunch crush cry crystal cube culture cup cupboard curious current curtain curve cushion custom cute cycle dad damage damp dance danger daring dash daughter dawn day deal debate debris decade december decide decline decorate decrease deer defense define defy degree delay deliver demand demise denial dentist deny depart depend deposit depth deputy derive describe desert design desk despair destroy detail detect develop device devote diagram dial diamond diary dice diesel diet differ digital dignity dilemma dinner dinosaur direct dirt disagree discover disease dish dismiss disorder display distance divert divide divorce dizzy doctor document dog doll dolphin domain donate donkey donor door dose double dove draft dragon drama drastic draw dream dress drift drill drink drip drive drop drum dry duck dumb dune during dust dutch duty dwarf dynamic eager eagle early earn earth easily east easy echo ecology economy edge edit educate effort egg eight either elbow elder electric elegant element elephant elevator elite else embark embody embrace emerge emotion employ empower empty enable enact end endless endorse enemy energy enforce engage engine enhance enjoy enlist enough enrich enroll ensure enter entire entry envelope episode equal equip era erase erode erosion error erupt escape essay essence estate eternal ethics evidence evil evoke evolve exact example excess exchange excite exclude excuse execute exercise exhaust exhibit exile exist exit exotic expand expect expire explain expose express extend extra eye eyebrow fabric face faculty fade faint faith fall false fame family famous fan fancy fantasy farm fashion fat fatal father fatigue fault favorite feature february federal fee feed feel female fence festival fetch fever few fiber fiction field figure file film filter final find fine finger finish fire firm first fiscal fish fit fitness fix flag flame flash flat flavor flee flight flip float flock floor flower fluid flush fly foam focus fog foil fold follow food foot force forest forget fork fortune forum forward fossil foster found fox fragile frame frequent fresh friend fringe frog front frost frown frozen fruit fuel fun funny furnace fury future gadget gain galaxy gallery game gap garage garbage garden garlic garment gas gasp gate gather gauge gaze general genius genre gentle genuine gesture ghost giant gift giggle ginger giraffe girl give glad glance glare glass glide glimpse globe gloom glory glove glow glue goat goddess gold good goose gorilla gospel gossip govern gown grab grace grain grant grape grass gravity great green grid grief grit grocery group grow grunt guard guess guide guilt guitar gun gym habit hair half hammer hamster hand happy harbor hard harsh harvest hat have hawk hazard head health heart heavy hedgehog height hello helmet help hen hero hidden high hill hint hip hire history hobby hockey hold hole holiday hollow home honey hood hope horn horror horse hospital host hotel hour hover hub huge human humble humor hundred hungry hunt hurdle hurry hurt husband hybrid ice icon idea identify idle ignore ill illegal illness image imitate immense immune impact impose improve impulse inch include income increase index indicate indoor industry infant inflict inform inhale inherit initial inject injury inmate inner innocent input inquiry insane insect inside inspire install intact interest into invest invite involve iron island isolate issue item ivory jacket jaguar jar jazz jealous jeans jelly jewel job join joke journey joy judge juice jump jungle junior junk just kangaroo keen keep ketchup key kick kid kidney kind kingdom kiss kit kitchen kite kitten kiwi knee knife knock know lab label labor ladder lady lake lamp language laptop large later latin laugh laundry lava law lawn lawsuit layer lazy leader leaf learn leave lecture left leg legal legend leisure lemon lend length lens leopard lesson letter level liar liberty library license life lift light like limb limit link lion liquid list little live lizard load loan lobster local lock logic lonely long loop lottery loud lounge love loyal lucky luggage lumber lunar lunch luxury lyrics machine mad magic magnet maid mail main major make mammal man manage mandate mango mansion manual maple marble march margin marine market marriage mask mass master match material math matrix matter maximum maze meadow mean measure meat mechanic medal media melody melt member memory mention menu mercy merge merit merry mesh message metal method middle midnight milk million mimic mind minimum minor minute miracle mirror misery miss mistake mix mixed mixture mobile model modify mom moment monitor monkey monster month moon moral more morning mosquito mother motion motor mountain mouse move movie much muffin mule multiply muscle museum mushroom music must mutual myself mystery myth naive name napkin narrow nasty nation nature near neck need negative neglect neither nephew nerve nest net network neutral never news next nice night noble noise nominee noodle normal north nose notable note nothing notice novel now nuclear number nurse nut oak obey object oblige obscure observe obtain obvious occur ocean october odor off offer office often oil okay old olive olympic omit once one onion online only open opera opinion oppose option orange orbit orchard order ordinary organ orient original orphan ostrich other outdoor outer output outside oval oven over own owner oxygen oyster ozone pact paddle page pair palace palm panda panel panic panther paper parade parent park parrot party pass patch path patient patrol pattern pause pave payment peace peanut pear peasant pelican pen penalty pencil people pepper perfect permit person pet phone photo phrase physical piano picnic picture piece pig pigeon pill pilot pink pioneer pipe pistol pitch pizza place planet plastic plate play please pledge pluck plug plunge poem poet point polar pole police pond pony pool popular portion position possible post potato pottery poverty powder power practice praise predict prefer prepare present pretty prevent price pride primary print priority prison private prize problem process produce profit program project promote proof property prosper protect proud provide public pudding pull pulp pulse pumpkin punch pupil puppy purchase purity purpose purse push put puzzle pyramid quality quantum quarter question quick quit quiz quote rabbit raccoon race rack radar radio rail rain raise rally ramp ranch random range rapid rare rate rather raven raw razor ready real reason rebel rebuild recall receive recipe record recycle reduce reflect reform refuse region regret regular reject relax release relief rely remain remember remind remove render renew rent reopen repair repeat replace report require rescue resemble resist resource response result retire retreat return reunion reveal review reward rhythm rib ribbon rice rich ride ridge rifle right rigid ring riot ripple risk ritual rival river road roast robot robust rocket romance roof rookie room rose rotate rough round route royal rubber rude rug rule run runway rural sad saddle sadness safe sail salad salmon salon salt salute same sample sand satisfy satoshi sauce sausage save say scale scan scare scatter scene scheme school science scissors scorpion scout scrap screen script scrub sea search season seat second secret section security seed seek segment select sell seminar senior sense sentence series service session settle setup seven shadow shaft shallow share shed shell sheriff shield shift shine ship shiver shock shoe shoot shop short shoulder shove shrimp shrug shuffle shy sibling sick side siege sight sign silent silk silly silver similar simple since sing siren sister situate six size skate sketch ski skill skin skirt skull slab slam sleep slender slice slide slight slim slogan slot slow slush small smart smile smoke smooth snack snake snap sniff snow soap soccer social sock soda soft solar soldier solid solution solve someone song soon sorry sort soul sound soup source south space spare spatial spawn speak special speed spell spend sphere spice spider spike spin spirit split spoil sponsor spoon sport spot spray spread spring spy square squeeze squirrel stable stadium staff stage stairs stamp stand start state stay steak steel stem step stereo stick still sting stock stomach stone stool story stove strategy street strike strong struggle student stuff stumble style subject submit subway success such sudden suffer sugar suggest suit summer sun sunny sunset super supply supreme sure surface surge surprise surround survey suspect sustain swallow swamp swap swarm swear sweet swift swim swing switch sword symbol symptom syrup system table tackle tag tail talent talk tank tape target task taste tattoo taxi teach team tell ten tenant tennis tent term test text thank that theme then theory there they thing this thought three thrive throw thumb thunder ticket tide tiger tilt timber time tiny tip tired tissue title toast tobacco today toddler toe together toilet token tomato tomorrow tone tongue tonight tool tooth top topic topple torch tornado tortoise toss total tourist toward tower town toy track trade traffic tragic train transfer trap trash travel tray treat tree trend trial tribe trick trigger trim trip trophy trouble truck true truly trumpet trust truth try tube tuition tumble tuna tunnel turkey turn turtle twelve twenty twice twin twist two type typical ugly umbrella unable unaware uncle uncover under undo unfair unfold unhappy uniform unique unit universe unknown unlock until unusual unveil update upgrade uphold upon upper upset urban urge usage use used useful useless usual utility vacant vacuum vague valid valley valve van vanish vapor various vast vault vehicle velvet vendor venture venue verb verify version very vessel veteran viable vibrant vicious victory video view village vintage violin virtual virus visa visit visual vital vivid vocal voice void volcano volume vote voyage wage wagon wait walk wall walnut want warfare warm warrior wash wasp waste water wave way wealth weapon wear weasel weather web wedding weekend weird welcome west wet whale what wheat wheel when where whip whisper wide width wife wild will win window wine wing wink winner winter wire wisdom wise wish witness wolf woman wonder wood wool word work world worry worth wrap wreck wrestle wrist write wrong yard year yellow you young youth zebra zero zone zoo".split(" ");
+var W2I   = {};
+WORDS.forEach(function(w,i){ W2I[w]=i; });
+
+// No upfront PREFIX index — filter() real-time on 2048 words is fast enough and saves ~170KB RAM
+function getMatches(token){
+  return WORDS.filter(function(w){ return w.startsWith(token); });
+}
+
+// ─────────────────────────────────────────────────────────────────
+// SHA-256 pure JS (FIPS 180-4)
+// ─────────────────────────────────────────────────────────────────
+var K256=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+var H256=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+function rotr(x,n){return(x>>>n)|(x<<(32-n));}
+function add(){var r=0;for(var i=0;i<arguments.length;i++)r=(r+arguments[i])>>>0;return r;}
+function sha256(data){
+  var len=data.length,padLen=(len+1+8+63)&~63,buf=new Uint8Array(padLen);
+  buf.set(data);buf[len]=0x80;
+  var dv=new DataView(buf.buffer);dv.setUint32(padLen-4,len*8,false);
+  var H=H256.slice();
+  for(var blk=0;blk<padLen;blk+=64){
+    var W=new Uint32Array(64);
+    for(var i=0;i<16;i++)W[i]=dv.getUint32(blk+i*4,false);
+    for(var i=16;i<64;i++){var s0=rotr(W[i-15],7)^rotr(W[i-15],18)^(W[i-15]>>>3),s1=rotr(W[i-2],17)^rotr(W[i-2],19)^(W[i-2]>>>10);W[i]=add(W[i-16],s0,W[i-7],s1);}
+    var a=H[0],b=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+    for(var i=0;i<64;i++){var S1=rotr(e,6)^rotr(e,11)^rotr(e,25),ch=(e&f)^(~e&g),t1=add(h,S1,ch,K256[i],W[i]),S0=rotr(a,2)^rotr(a,13)^rotr(a,22),mj=(a&b)^(a&c)^(b&c),t2=add(S0,mj);h=g;g=f;f=e;e=add(d,t1);d=c;c=b;b=a;a=add(t1,t2);}
+    H[0]=add(H[0],a);H[1]=add(H[1],b);H[2]=add(H[2],c);H[3]=add(H[3],d);H[4]=add(H[4],e);H[5]=add(H[5],f);H[6]=add(H[6],g);H[7]=add(H[7],h);
+  }
+  var out=new Uint8Array(32),odv=new DataView(out.buffer);H.forEach(function(h32,i){odv.setUint32(i*4,h32,false);});return out;
+}
+(function(){
+  var ok=sha256(new Uint8Array(16))[0]===0x37&&sha256(new Uint8Array(32))[0]===0x66;
+  var el=document.getElementById("sha256-selftest");
+  el.className="selftest "+(ok?"ok":"fail");
+  el.textContent=ok?"✓ SHA-256 self-test passed — System ready":"✗ SHA-256 self-test failed — DO NOT USE!";
+})();
+
+// ─────────────────────────────────────────────────────────────────
+// BIP-39 utilities
+// ─────────────────────────────────────────────────────────────────
+function getBipParams(nWords){
+  var total=nWords*11,csLen=total/33,entLen=total-csLen;
+  return{total:total,csLen:csLen,entLen:entLen,lastEntBits:entLen-(nWords-1)*11};
+}
+function toBin11(n){return n.toString(2).padStart(11,"0");}
+function fromBin(b){return parseInt(b,2);}
+function xorBin(a,b){var r="";for(var i=0;i<a.length;i++)r+=(parseInt(a[i])^parseInt(b[i])).toString();return r;}
+function cbits(bits,c0,c1){var h="";for(var i=0;i<bits.length;i++)h+='<span class="'+(bits[i]==="0"?c0:c1)+'">'+bits[i]+'</span>';return h;}
+function toHex(bytes){return Array.from(bytes).map(function(b){return b.toString(16).padStart(2,"0");}).join("");}
+function verifyChecksum(words){
+  var p=getBipParams(words.length),allBits=words.map(function(w){return toBin11(W2I[w]);}).join("");
+  var entBits=allBits.slice(0,p.entLen),csGiven=allBits.slice(p.entLen);
+  var eb=new Uint8Array(p.entLen/8);for(var i=0;i<eb.length;i++)eb[i]=parseInt(entBits.slice(i*8,i*8+8),2);
+  var hash=sha256(eb),csExp=hash[0].toString(2).padStart(8,"0").slice(0,p.csLen);
+  return{valid:csGiven===csExp,entBits:entBits,csBits:csGiven,csExp:csExp,sha256hex:toHex(hash)};
+}
+
+// ─────────────────────────────────────────────────────────────────
+// AUTOCOMPLETE — Global single popup (position:fixed)
+// ─────────────────────────────────────────────────────────────────
+var acPopup   = document.getElementById("ac-popup");
+var acHint    = document.getElementById("ac-hint");
+var acActive  = null;    // input element that is active
+var acMatches = [];      // current matches
+var acSelIdx  = -1;      // highlight index
+
+function repositionPopup(inputEl){
+  var rect=inputEl.getBoundingClientRect();
+  var w=Math.max(rect.width, 240);
+  var top=rect.bottom+2;
+  // If overflows bottom viewport → position above input
+  var popH=Math.min(acMatches.length*28+32,240);
+  if(top+popH > window.innerHeight-8) top=rect.top-popH-2;
+  acPopup.style.cssText="top:"+top+"px;left:"+rect.left+"px;width:"+w+"px;";
+}
+window.addEventListener("scroll",function(){ if(acActive) repositionPopup(acActive); },true);
+window.addEventListener("resize",function(){ if(acActive) repositionPopup(acActive); });
+
+function openPopup(inputEl, prefix, matches){
+  acActive=inputEl; acMatches=matches; acSelIdx=0; // highlight index 0 immediately
+  acHint.textContent='"'+prefix+'" — '+matches.length+' words'
+    +(matches.length===1?' [Tab/Enter = Select]':' [↑↓/Tab/Enter = Select, Esc = Close]');
+  // Clear old items (keep hint)
+  while(acPopup.children.length>1) acPopup.removeChild(acPopup.lastChild);
+  matches.forEach(function(word,i){
+    var item=document.createElement("div");
+    item.className="ac-item"; item.dataset.i=i;
+    item.innerHTML='<span class="ac-match">'+word.slice(0,prefix.length)+'</span>'
+      +'<span class="ac-rest">'+word.slice(prefix.length)+'</span>'
+      +'<span class="ac-idx">'+W2I[word]+'</span>';
+    item.addEventListener("mousedown",function(e){
+      e.preventDefault(); // Prevent input blur
+      acCommit(word);
+    });
+    acPopup.appendChild(item);
+  });
+  repositionPopup(inputEl);
+  acPopup.classList.add("open");
+  setHighlight(0); // highlight first item immediately
+}
+function closePopup(){
+  acPopup.classList.remove("open");
+  acActive=null; acMatches=[]; acSelIdx=-1;
+}
+function setHighlight(i){
+  var items=acPopup.querySelectorAll(".ac-item");
+  items.forEach(function(el){el.classList.remove("sel");});
+  if(i>=0&&i<items.length){items[i].classList.add("sel");items[i].scrollIntoView({block:"nearest"});}
+  acSelIdx=i;
+}
+// acCommit: select word from dropdown
+function acCommit(word){
+  if(!acActive) return;
+  var inp=acActive;
+  inp.value="";   // Clear input box after selection
+  closePopup();
+  var sid=inp.dataset.sid;
+  if(sid) commitWord(sid, word);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Share state
+// ─────────────────────────────────────────────────────────────────
+var shareWords={};
+var lastSeedLen="24";    // default 24 words based on Best Practice
+var lastNumShares="2";
+// IS_UNSAFE_ENV: true = remote server (should demo only)
+// file:// and localhost are considered safe, no lock
+var IS_UNSAFE_ENV=(function(){
+  var proto=window.location.protocol;
+  var host=window.location.hostname;
+  if(proto==="file:") return false;
+  if(host==="localhost"||host==="127.0.0.1") return false;
+  return true;
+})();   // shareWords["share-1"] = ["abandon","ability",...]
+
+// ─────────────────────────────────────────────────────────────────
+// buildInputs
+// ─────────────────────────────────────────────────────────────────
+function buildInputs(){
+  var seedLenEl  =document.getElementById("seed-len");
+  var numShareEl =document.getElementById("num-shares");
+  var n  =parseInt(numShareEl.value);
+  var len=parseInt(seedLenEl.value);
+  // Check if any data has been typed
+  var hasData=Object.keys(shareWords).some(function(sid){
+    return shareWords[sid]&&shareWords[sid].length>0;
+  });
+  if(hasData){
+    if(!confirm("You are about to change settings.\nAll entered seed data will be lost.\n\nDo you want to proceed?")){
+      seedLenEl.value  =lastSeedLen;   // revert dropdown
+      numShareEl.value =lastNumShares;
+      return;
+    }
+  }
+  lastSeedLen   =seedLenEl.value;  // Save latest value before rebuild
+  lastNumShares =numShareEl.value;
+  var con=document.getElementById("shares-container");
+  con.innerHTML=""; shareWords={}; closePopup();
+
+  for(var i=1;i<=n;i++){
+    var sid="share-"+i;
+    shareWords[sid]=[];
+    var d=document.createElement("div");
+    d.className="share-block";
+    d.innerHTML=
+      '<div class="share-header">'
+        +'<span class="share-name">Share '+i+'</span>'
+        +'<div class="share-meta">'
+          +'<span class="share-wc" id="wc-'+i+'">0 / '+len+' Words</span>'
+          +'<button class="btn-clear" onclick="clearShare(\''+sid+'\','+i+','+len+')">✕ Clear Data</button>'
+        +'</div>'
+      +'</div>'
+      // badges showing selected words
+      +'<div class="word-badges" id="badges-'+i
+        +'" onclick="document.getElementById(\'inp-'+sid+'\').focus()">'
+        +'<div class="badges-label">▣ Selected Words</div>'
+        +'<span class="badges-placeholder">No words/seedphrase yet — Type or paste in the input box below.</span>'
+      +'</div>'
+      // Single input: supports both paste and autocomplete
+      +'<div class="input-area">'
+        +'<input type="text" id="inp-'+sid+'" class="word-input"'
+          +' data-sid="'+sid+'"'
+          +' autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"'
+          +' placeholder="▶ Type a word (Autocomplete: Tab = select, ↑↓ = navigate) or Paste the entire Seedphrase.">'
+        +'<div class="input-hint-overlay" id="hint-'+i+'">0/'+len+'</div>'
+      +'</div>'
+      +'<div class="cs-detail" id="cs-'+i+'"></div>';
+    con.appendChild(d);
+    bindInput(sid,i,len);
+  }
+  document.getElementById("output").style.display="none";
+  clearStatus();
+  setTimeout(updateCalcBtn,0); // reset after DOM rebuild
+}
+
+function clearShare(sid,shareNum,expectedLen){
+  shareWords[sid]=[];
+  document.getElementById("inp-"+sid).value="";
+  document.getElementById("inp-"+sid).className="word-input";
+  renderBadges(sid,shareNum,expectedLen);
+  runLiveCheck(sid,shareNum,expectedLen);
+  closePopup();
+}
+
+// ─────────────────────────────────────────────────────────────────
+// bindInput: bind events to this share's input
+// ─────────────────────────────────────────────────────────────────
+function bindInput(sid,shareNum,expectedLen){
+  var inp=document.getElementById("inp-"+sid);
+
+  // ── PASTE event: detect multi-word paste ──
+  inp.addEventListener("paste",function(e){
+    e.preventDefault(); // Prevent default paste (we handle it manually)
+    var pasted=(e.clipboardData||window.clipboardData).getData("text");
+    var tokens=pasted.trim().toLowerCase().split(/\s+/).filter(function(t){return t.length>0;});
+
+    // If paste is more than 1 word → treat as "paste mode"
+    if(tokens.length > 1){
+      handlePaste(sid,shareNum,expectedLen,tokens,inp);
+    } else if(tokens.length===1){
+      // single word paste → put in input and trigger autocomplete
+      inp.value=tokens[0];
+      updatePopup(inp,tokens[0]);
+    }
+  });
+
+  // ── INPUT event: autocomplete mode ──
+  inp.addEventListener("input",function(){
+    var val=inp.value;
+    // Check if ends with space → commit word
+    if(val.length>0 && val[val.length-1]===" "){
+      var token=val.trim().toLowerCase();
+      if(W2I.hasOwnProperty(token)){
+        inp.value=""; commitWord(sid,token); closePopup();
+      } else {
+        var ms=getMatches(token);
+        if(ms.length===1){ inp.value=""; commitWord(sid,ms[0]); closePopup(); }
+        else { updatePopup(inp,token); }
+      }
+      return;
+    }
+    var token=val.trim().toLowerCase();
+    if(token.length>0){ updatePopup(inp,token); }
+    else { closePopup(); }
+  });
+
+  // ── KEYDOWN: navigation + shortcuts ──
+  inp.addEventListener("keydown",function(e){
+    var isOpen=acPopup.classList.contains("open")&&acActive===inp;
+
+    if(e.key==="Tab"){
+      if(isOpen&&acMatches.length>0){
+        e.preventDefault();
+        inp.value="";
+        acCommit(acMatches[acSelIdx>=0?acSelIdx:0]);
+      }
+    } else if(e.key==="Enter"){
+      e.preventDefault();
+      if(isOpen&&acMatches.length>0){
+        inp.value="";
+        acCommit(acMatches[acSelIdx>=0?acSelIdx:0]);
+      } else {
+        var token=inp.value.trim().toLowerCase();
+        if(W2I.hasOwnProperty(token)){ inp.value=""; commitWord(sid,token); closePopup(); }
+      }
+    } else if(e.key==="ArrowDown"){
+      if(isOpen){e.preventDefault();setHighlight(Math.min(acSelIdx+1,acMatches.length-1));}
+    } else if(e.key==="ArrowUp"){
+      if(isOpen){e.preventDefault();setHighlight(Math.max(acSelIdx-1,0));}
+    } else if(e.key==="Escape"){
+      closePopup();
+    } else if(e.key==="Backspace"&&inp.value===""){
+      // Backspace on empty input → delete last badge
+      e.preventDefault();
+      var arr=shareWords[sid];
+      if(arr.length>0){ arr.pop(); renderBadges(sid,shareNum,expectedLen); runLiveCheck(sid,shareNum,expectedLen); }
+    }
+  });
+
+  // blur: Close popup after 200ms (so mousedown on item registers first)
+  inp.addEventListener("blur",function(){
+    setTimeout(function(){
+      if(acActive===inp) closePopup();
+      var token=inp.value.trim().toLowerCase();
+      if(token.length>0 && W2I.hasOwnProperty(token)){
+        inp.value=""; commitWord(sid,token); // auto-commit valid word on blur
+      }
+    },200);
+  });
+  // focus: Open popup if there is text
+  inp.addEventListener("focus",function(){
+    var token=inp.value.trim().toLowerCase();
+    if(token.length>0) updatePopup(inp,token);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
+// handlePaste: manage multi-word paste
+// ─────────────────────────────────────────────────────────────────
+function handlePaste(sid,shareNum,expectedLen,tokens,inp){
+  var existing = shareWords[sid];
+
+  // Calculate acceptable word count
+  var canAccept = expectedLen - existing.length;
+  if(canAccept <= 0){
+    flashInput(inp,"err");
+    showTempMsg(inp,"✗ Already reached "+expectedLen+" words.");
+    return;
+  }
+
+  // validate all tokens before commit
+  var valid=[],invalid=[];
+  tokens.forEach(function(t){
+    if(W2I.hasOwnProperty(t)) valid.push(t);
+    else invalid.push(t);
+  });
+
+  // Take as much as accepted
+  var toAdd=valid.slice(0,canAccept);
+  toAdd.forEach(function(w){ existing.push(w); });
+
+  inp.value=""; // Clear input after paste
+  renderBadges(sid,shareNum,expectedLen);
+  runLiveCheck(sid,shareNum,expectedLen);
+  closePopup();
+
+  if(invalid.length>0){
+    flashInput(inp,"warn");
+    showTempMsg(inp,"⚠ "+toAdd.length+"/"+tokens.length+" valid words"
+      +" | Unknown: "+invalid.slice(0,3).join(", ")+(invalid.length>3?"…":""));
+  } else if(toAdd.length<tokens.length){
+    flashInput(inp,"warn");
+    showTempMsg(inp,"⚠ Accepted "+toAdd.length+" words (Reached "+expectedLen+" limit).");
+  } else {
+    flashInput(inp,"ok");
+  }
+}
+
+// flashInput: animation feedback
+function flashInput(inp,type){
+  inp.classList.remove("flash-ok","flash-err");
+  void inp.offsetWidth; // reflow trigger
+  inp.classList.add(type==="ok"?"flash-ok":"flash-err");
+  setTimeout(function(){inp.classList.remove("flash-ok","flash-err");},500);
+}
+
+// showTempMsg: show temporary message in hint overlay
+function showTempMsg(inp,msg){
+  var sid=inp.dataset.sid;
+  var num=sid.replace("share-","");
+  var hint=document.getElementById("hint-"+num);
+  var old=hint.textContent;
+  hint.textContent=msg;
+  hint.style.color="var(--yellow)";
+  setTimeout(function(){
+    hint.textContent=old;
+    hint.style.color="";
+  },2500);
+}
+
+// updatePopup: lookup prefix → open/close popup
+function updatePopup(inputEl,prefix){
+  if(!prefix){closePopup();return;}
+  var matches=getMatches(prefix);   // filter real-time
+  if(matches.length===0){
+    closePopup();
+    inputEl.className="word-input state-err";
+  } else {
+    inputEl.className="word-input";
+    openPopup(inputEl,prefix,matches);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// commitWord: add 1 word into shareWords
+// ─────────────────────────────────────────────────────────────────
+function commitWord(sid,word){
+  var num=parseInt(sid.replace("share-",""));
+  var len=parseInt(document.getElementById("seed-len").value);
+  var arr=shareWords[sid];
+  if(arr.length>=len) return; // Full
+  arr.push(word);
+  renderBadges(sid,num,len);
+  runLiveCheck(sid,num,len);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// renderBadges: display word badges + update hint + wc
+// ─────────────────────────────────────────────────────────────────
+function renderBadges(sid,shareNum,expectedLen){
+  var arr=shareWords[sid];
+  var badgeEl=document.getElementById("badges-"+shareNum);
+  var wcEl   =document.getElementById("wc-"+shareNum);
+  var hintEl =document.getElementById("hint-"+shareNum);
+  wcEl.textContent  =arr.length+" / "+expectedLen+" Words";
+  hintEl.textContent=arr.length+"/"+expectedLen;
+
+  badgeEl.innerHTML='<div class="badges-label">▣ Selected Words</div>';
+  if(arr.length===0){
+    var ph=document.createElement("span");
+    ph.className="badges-placeholder";
+    ph.textContent="No words/seedphrase yet — Type or paste in the input box below.";
+    badgeEl.appendChild(ph);
+    return;
+  }
+  arr.forEach(function(w,i){
+    var span=document.createElement("span");
+    span.className="badge";
+    span.innerHTML='<span class="bnum">'+(i+1)+'.</span>'+w
+      +'<span class="bdel" title="Delete" onclick="removeWordAt(\''+sid+'\','+shareNum+','+expectedLen+','+i+')">×</span>';
+    badgeEl.appendChild(span);
+  });
+}
+
+function removeWordAt(sid,shareNum,expectedLen,idx){
+  shareWords[sid].splice(idx,1);
+  renderBadges(sid,shareNum,expectedLen);
+  runLiveCheck(sid,shareNum,expectedLen);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// runLiveCheck: check checksum real-time
+// ─────────────────────────────────────────────────────────────────
+function runLiveCheck(sid,shareNum,expectedLen){
+  document.getElementById("output").style.display="none"; // Hide immediately upon data change
+  var arr  =shareWords[sid];
+  var csDiv=document.getElementById("cs-"+shareNum);
+  var inp  =document.getElementById("inp-"+sid);
+  if(arr.length===0){csDiv.textContent="";csDiv.className="cs-detail";inp.className="word-input";return;}
+  var bad=arr.filter(function(w){return !W2I.hasOwnProperty(w);});
+  if(bad.length>0){csDiv.className="cs-detail fail";csDiv.textContent="✗ Invalid word(s) found: "+bad.join(", ");return;}
+  if(arr.length<expectedLen){csDiv.textContent="";csDiv.className="cs-detail";return;}
+  var cs=verifyChecksum(arr);
+  if(cs.valid){
+    inp.className="word-input state-ok";
+    csDiv.className="cs-detail ok";
+    csDiv.textContent="✓ Checksum valid — CS: "+cs.csBits+" | SHA256: "+cs.sha256hex.slice(0,16)+"…";
+  } else {
+    inp.className="word-input state-warn";
+    csDiv.className="cs-detail fail";
+    csDiv.textContent="✗ Invalid Checksum — Got: "+cs.csBits+" | Expected: "+cs.csExp;
+  }
+  updateCalcBtn(); // update button state every time checksum is evaluated
+}
+
+// updateCalcBtn: enable button ONLY if all shares are complete + valid checksum
+function updateCalcBtn(){
+  var n  =parseInt(document.getElementById("num-shares").value);
+  var len=parseInt(document.getElementById("seed-len").value);
+  var btn=document.getElementById("calc-btn");
+  var allReady=true;
+  var notReady=[];
+  for(var s=1;s<=n;s++){
+    var sid="share-"+s;
+    var arr=shareWords[sid]||[];
+    if(arr.length!==len){ allReady=false; notReady.push("S"+s+": "+arr.length+"/"+len+" words"); continue; }
+    var cs=verifyChecksum(arr);
+    if(!cs.valid){ allReady=false; notReady.push("S"+s+": invalid checksum"); }
+  }
+  if(allReady){
+    if(IS_UNSAFE_ENV){
+      btn.disabled=true; btn.style.opacity="0.2"; btn.style.cursor="not-allowed";
+      btn.title="Click 'I understand, use for Demo' in the warning banner first.";
+    } else {
+      btn.disabled=false; btn.style.opacity=""; btn.style.cursor="pointer";
+      btn.title="Ready to calculate — all shares complete and checksums ✓";
+    }
+  } else {
+    btn.disabled=true; btn.style.opacity="0.35"; btn.style.cursor="not-allowed";
+    btn.title="Not ready: "+notReady.join(", ");
+  }
+}
+
+function showStatus(msg,type){var e=document.getElementById("status");e.textContent=msg;e.className=type;}
+function clearStatus(){var e=document.getElementById("status");e.textContent="";e.className="";}
+
+// ─────────────────────────────────────────────────────────────────
+// calculate
+// ─────────────────────────────────────────────────────────────────
+function calculate(){
+  if(IS_UNSAFE_ENV){
+    showStatus("🚫 Demo Mode not activated — Click 'I understand, use for Demo' first.","err");
+    return;
+  }
+  var n  =parseInt(document.getElementById("num-shares").value);
+  var len=parseInt(document.getElementById("seed-len").value);
+  var p  =getBipParams(len);
+  var shares=[];
+  for(var s=1;s<=n;s++){
+    var sid="share-"+s,words=shareWords[sid]||[];
+    if(words.length!==len){showStatus("⚠ Share "+s+" has "+words.length+" words — requires "+len,"err");return;}
+    var cs=verifyChecksum(words);
+    if(!cs.valid){
+      // Hard stop: invalid checksum = entropy could be damaged — do not proceed to XOR
+      showStatus(
+        "🚫 Share "+s+" Checksum Invalid — Cannot calculate."
+        +" | Got: "+cs.csBits+" Expected: "+cs.csExp
+        +" | Please completely verify Share "+s+" first.",
+        "err"
+      );
+      var el=document.getElementById("badges-"+s);
+      if(el) el.scrollIntoView({behavior:"smooth",block:"center"});
+      return;
+    }
+    shares.push(words);
+  }
+  var tableData=[],allEntBits="";
+  for(var pos=0;pos<len-1;pos++){
+    var entries=[];
+    for(var s=0;s<shares.length;s++){var w=shares[s][pos],ix=W2I[w],bts=toBin11(ix);entries.push({word:w,idx:ix,bits:bts});}
+    var running=entries[0].bits,steps=[];
+    for(var s=1;s<entries.length;s++){var nxt=entries[s].bits,par=xorBin(running,nxt);steps.push({sIdx:s,bits:nxt,after:par});running=par;}
+    allEntBits+=running;
+    tableData.push({pos:pos+1,isLast:false,shares:entries,steps:steps,resBits:running,resDec:fromBin(running),resWord:WORDS[fromBin(running)]});
+  }
+  var le=[];for(var s=0;s<shares.length;s++){var w=shares[s][len-1],ix=W2I[w],bts=toBin11(ix);le.push({word:w,idx:ix,bits:bts});}
+  var rEnt=le[0].bits.slice(0,p.lastEntBits),lSteps=[];
+  for(var s=1;s<le.length;s++){var ne=le[s].bits.slice(0,p.lastEntBits),pe=xorBin(rEnt,ne);lSteps.push({sIdx:s,bits:le[s].bits,xorEnt:ne,afterEnt:pe});rEnt=pe;}
+  allEntBits+=rEnt;
+  var eb=new Uint8Array(p.entLen/8);for(var i=0;i<eb.length;i++)eb[i]=parseInt(allEntBits.slice(i*8,i*8+8),2);
+  var hb=sha256(eb),csBits=hb[0].toString(2).padStart(8,"0").slice(0,p.csLen),sha256hex=toHex(hb);
+  var lwBits=rEnt+csBits,lastIdx=fromBin(lwBits),lastWord=WORDS[lastIdx];
+  var rf=le[0].bits;for(var s=1;s<le.length;s++)rf=xorBin(rf,le[s].bits);
+  tableData.push({pos:len,isLast:true,shares:le,steps:lSteps,resBits:lwBits,resDec:lastIdx,resWord:lastWord,entBitsInWord:rEnt,csBitsInWord:csBits,naiveBits:rf,naiveDec:fromBin(rf),naiveWord:WORDS[fromBin(rf)]});
+  var resultWords=tableData.map(function(r){return r.resWord;});
+  var masterCS=verifyChecksum(resultWords);
+  renderResult(resultWords,tableData,masterCS,p);
+  showStatus("✓ Calculation successful — "+len+" words from "+n+" shares | checksum: "+(masterCS.valid?"valid ✓":"INVALID ✗"),"ok");
+}
+
+// ─────────────────────────────────────────────────────────────────
+// renderResult
+// ─────────────────────────────────────────────────────────────────
+function renderResult(words,tableData,masterCS,p){
+  var rw=document.getElementById("result-words");rw.innerHTML="";
+  words.forEach(function(w,i){var d=document.createElement("div");d.className="seed-word";d.innerHTML='<span class="num">'+(i+1)+'.</span><span class="w">'+w+'</span>';rw.appendChild(d);});
+  var mcr=document.getElementById("master-cs-result");
+  if(masterCS.valid){mcr.className="master-cs-box ok";mcr.innerHTML='<strong>✓ Master Seed Checksum is Valid</strong><div class="cs-line">SHA-256(entropy): '+masterCS.sha256hex+'</div><div class="cs-line">Checksum bits: <strong>'+masterCS.csBits+'</strong> ✓</div>';}
+  else{mcr.className="master-cs-box fail";mcr.innerHTML='<strong>✗ Master Seed Checksum is Invalid</strong><div class="cs-line">Got: '+masterCS.csBits+' | Expected: '+masterCS.csExp+'</div><div class="cs-line">SHA-256: '+masterCS.sha256hex+'</div>';}
+  var tbody=document.getElementById("verify-body");tbody.innerHTML="";
+  tableData.forEach(function(row){
+    var tr=document.createElement("tr");if(row.isLast)tr.className="last-word-row";
+    var tdPos=document.createElement("td");tdPos.innerHTML='<span class="dim">'+String(row.pos).padStart(2,"0")+'</span>'+(row.isLast?' <span style="color:var(--yellow)">★</span>':'');
+    var tdWords=document.createElement("td");tdWords.innerHTML=row.shares.map(function(s,i){return'<div class="line"><span class="dim">S'+(i+1)+':</span> '+s.word+' <span class="dim">('+s.idx+')</span></div>';}).join("");
+    var tdBits=document.createElement("td");
+    if(!row.isLast){tdBits.innerHTML=row.shares.map(function(s,i){return'<div class="line"><span class="dim">S'+(i+1)+':</span> '+cbits(s.bits,"b0","b1")+'</div>';}).join("");}
+    else{tdBits.innerHTML=row.shares.map(function(s,i){var ep=s.bits.slice(0,p.lastEntBits),cp=s.bits.slice(p.lastEntBits);return'<div class="line"><span class="dim">S'+(i+1)+':</span> '+cbits(ep,"b0","b1")+'<span class="dim">|</span>'+cbits(cp,"b0","bc")+'</div>';}).join("");}
+    var tdXor=document.createElement("td");
+    if(!row.isLast){tdXor.innerHTML=row.steps.map(function(st){return'<div class="line"><span class="dim">⊕S'+(st.sIdx+1)+':</span> '+cbits(st.bits,"b0","b1")+' <span class="dim">→</span> '+cbits(st.after,"b0","br")+'</div>';}).join("")||'<span class="dim">—</span>';}
+    else{tdXor.innerHTML=row.steps.map(function(st){return'<div class="line"><span class="dim">⊕S'+(st.sIdx+1)+'</span> <span style="color:var(--yellow);font-size:0.8em">('+p.lastEntBits+'ent):</span> '+cbits(st.xorEnt,"b0","b1")+' <span class="dim">→</span> '+cbits(st.afterEnt,"b0","br")+'</div>';}).join("")+'<div class="line" style="margin-top:3px;color:var(--dim);font-size:0.82em">[naive 11b XOR → '+row.naiveWord+' ('+row.naiveDec+') — invalid checksum]</div>';}
+    var tdRes=document.createElement("td");
+    if(!row.isLast){tdRes.innerHTML='<div class="line"><span class="dim">BIN:</span> '+cbits(row.resBits,"b0","br")+'</div><div class="line"><span class="dim">DEC:</span> <span style="color:var(--orange)">'+row.resDec+'</span></div><div class="line"><span class="dim">Word:</span> <span class="bw">'+row.resWord+'</span></div>';}
+    else{tdRes.innerHTML='<div class="line"><span class="dim">ENT:</span> '+cbits(row.entBitsInWord,"b0","br")+'</div><div class="line"><span class="dim">CS: </span>'+cbits(row.csBitsInWord,"b0","bc")+' <span style="font-size:0.78em;color:var(--dim)">← SHA-256</span></div><div class="line"><span class="dim">BIN:</span> '+cbits(row.entBitsInWord,"b0","br")+cbits(row.csBitsInWord,"b0","bc")+'</div><div class="line"><span class="dim">DEC:</span> <span style="color:var(--orange)">'+row.resDec+'</span></div><div class="line"><span class="dim">Word:</span> <span class="bw">'+row.resWord+'</span></div>';}
+    tr.appendChild(tdPos);tr.appendChild(tdWords);tr.appendChild(tdBits);tr.appendChild(tdXor);tr.appendChild(tdRes);tbody.appendChild(tr);
+  });
+  var trCS=document.createElement("tr");trCS.className="cs-summary-row";
+  var tdL=document.createElement("td");tdL.colSpan=2;tdL.innerHTML='<span style="color:var(--yellow)">CHECKSUM SUMMARY</span>';
+  var tdR=document.createElement("td");tdR.colSpan=3;
+  tdR.innerHTML='<div class="line"><span class="dim">SHA-256(entropy '+p.entLen+'b)[0]=0x'+parseInt(masterCS.csExp.padEnd(8,"0"),2).toString(16).padStart(2,"0")+'</span> → first '+p.csLen+' bits=<span class="bc">'+masterCS.csExp+'</span>'+(masterCS.valid?' <span style="color:var(--green)">✓</span>':' <span style="color:var(--red)">✗</span>')+'</div><div class="line" style="font-size:0.85em;color:var(--dim)">SHA-256: '+masterCS.sha256hex+'</div>';
+  trCS.appendChild(tdL);trCS.appendChild(tdR);tbody.appendChild(trCS);
+  document.getElementById("output").style.display="block";
+  document.getElementById("output").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function copySeed(){
+  var s=Array.from(document.querySelectorAll(".seed-word .w")).map(function(e){return e.textContent;}).join(" ");
+  function fallbackCopy(text){
+    var ta=document.createElement("textarea"); ta.value=text;
+    ta.style.cssText="position:fixed;top:-9999px;left:-9999px;opacity:0;";
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    var ok=false; try{ok=document.execCommand("copy");}catch(e){}
+    document.body.removeChild(ta); return ok;
+  }
+  function onSuccess(){
+    var b=document.querySelector(".copy-btn");
+    b.textContent="[ Copied ✓ ]"; b.style.color="var(--green)"; b.style.borderColor="var(--green)";
+    setTimeout(function(){b.textContent="[ Copy Seed ]";b.style.color="";b.style.borderColor="";},2500);
+  }
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(s).then(onSuccess).catch(function(){
+      if(fallbackCopy(s)) onSuccess();
+      else alert("Browser blocked Clipboard access — Please write it down manually.");
+    });
+  } else { // file:// or Tor Safest mode
+    if(fallbackCopy(s)) onSuccess();
+    else alert("Browser blocked Clipboard access — Please write it down manually.");
+  }
+}
+
+// Check OPSEC: Must run from file:// ONLY
+(function checkAirGapped(){
+  if(!IS_UNSAFE_ENV) return; // file:// or localhost = safe
+
+  // Remote server → Show warning + allow user to opt-in for demo mode
+  var w=document.querySelector(".warn");
+  w.style.background="#3a0000";
+  w.style.border="2px solid #ff0000";
+  w.style.color="#ffaaaa";
+  w.style.padding="14px 16px";
+  w.innerHTML=
+    "<strong>⚠ Running on a Remote Server (" + window.location.hostname + ")</strong><br>"
+    +"NEVER use a real Seedphrase — Data could be intercepted.<br><br>"
+    +"<span style='color:#f7931a'>For Demo / Educational purposes only:</span> "
+    +"<button onclick='enableDemoMode(this)' "
+    +"style='background:#1a0e00;border:1px solid #f7931a;color:#f7931a;"
+    +"font-family:monospace;font-size:0.85em;padding:4px 12px;cursor:pointer;margin-left:6px;'>"
+    +"✓ I understand, use for Demo</button><br><br>"
+    +"<span style='color:#888;font-size:0.85em'>"
+    +"For actual use, save the Seed-XOR.html file → and run it on Tails OS in Offline Mode.";
+
+  // block button until demo is confirmed
+  var btn=document.getElementById("calc-btn");
+  if(btn){ btn.disabled=true; btn.style.opacity="0.2";
+    btn.title="Click 'I understand, use for Demo' in the warning banner above."; }
+})();
+
+// enableDemoMode: user confirms demo — unlock but warning persists
+function enableDemoMode(btn){
+  IS_UNSAFE_ENV=false;
+  // Convert warning into demo mode indicator
+  var w=document.querySelector(".warn");
+  w.style.background="#0d0800";
+  w.style.border="1px solid #f7931a";
+  w.style.color="#ccaa00";
+  w.innerHTML=
+    "⚡ <strong>Demo Mode Only</strong> — For use with Dummy Seedphrases only."
+    +" | SHA-256 and XOR Functions operate accurately 100%."
+    +" | <span style='color:#cc4444'>DO NOT enter a real Seedphrase in an online environment.</span>";
+  updateCalcBtn(); // re-evaluate button based on seed state
+}
+
+buildInputs();
+</script>
+</body>
+</html>
